@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Turtle</title>
+    <link rel="favicon" type="image/x-icon" href="favicon.ico">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.3/p5.min.js"
+        integrity="sha512-0zGLOFv/+OQ6YfVCSGDQWhrDRx0ONmBqWvs3gI4olm8i6xtKoG1FhEnB4eTaWCVnojyfUDgE8Izeln+mAJAkFA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="turtle.js"></script>
+    <!-- <script src="testSketch.js"></script> -->
+    <script type="module">
+        fetch('testSketch.js')
+            .then(response => response.text())
+            .then(code => {
+                const script = document.createElement('script');
+                script.textContent = `(function() { \n${code}\n })();`;
+                document.head.appendChild(script);
+            });
+    </script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="canvas-container">
+        <main></main>
+        <div class="canvas-controls">
+            <div class="size-controls">
+                <label>Width: <input type="number" id="canvasWidth" value="700" min="100" max="2000"></label>
+                <label>Height: <input type="number" id="canvasHeight" value="700" min="100" max="2000"></label>
+                <button id="applySize">Apply</button>
+                <button id="resetSize">Reset</button>
+            </div>
+            <div class="turtle-controls">
+                <label><input type="checkbox" id="showTurtle" checked> Show Turtle</label>
+                <label><input type="checkbox" id="showGrid"> Show Grid</label>
+                <div class="speed-control">
+                    <label>Speed: <span id="speedValue">Instant</span></label>
+                    <input type="range" id="speedSlider" min="0" max="1000" step="50" value="0">
+                </div>
+            </div>
+            <div class="documentation-links">
+                <a href="https://hanumanum.github.io/js-turtle/index_en.html" target="_blank">JS Turtle
+                    Documentation</a>
+                <a href="https://p5js.org/reference/" target="_blank">p5.js Documentation</a>
+            </div>
+            <div class="export-controls">
+                <button id="copyCanvas">Copy to Clipboard</button>
+                <button id="downloadCanvas">Download Image</button>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

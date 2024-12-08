@@ -1,0 +1,148 @@
+body {
+    margin: 0;
+    padding: 20px;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #f5f5f5;
+}
+
+.canvas-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+main {
+    display: flex;
+    justify-content: center;
+    padding: 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    width: fit-content;
+    margin: 0 auto;
+    overflow: hidden;
+    height: 700px;
+}
+
+main canvas {
+    display: block;
+    border-radius: 8px;
+}
+
+.canvas-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.size-controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+input[type="number"] {
+    width: 80px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: #4CAF50;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+button:hover {
+    background: #45a049;
+}
+
+#resetSize {
+    background: #f44336;
+}
+
+#resetSize:hover {
+    background: #da190b;
+}
+
+.documentation-links {
+    display: flex;
+    gap: 15px;
+}
+
+.documentation-links a {
+    color: #2196F3;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.documentation-links a:hover {
+    text-decoration: underline;
+}
+
+.export-controls {
+    display: flex;
+    gap: 15px;
+}
+
+#copyCanvas {
+    background: #2196F3;
+}
+
+#copyCanvas:hover {
+    background: #1976D2;
+}
+
+#downloadCanvas {
+    background: #673AB7;
+}
+
+#downloadCanvas:hover {
+    background: #5E35B1;
+}
+
+.turtle-marker {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 24px solid #4CAF50;
+    transform-origin: 50% 100%;
+    pointer-events: none;
+    /* transition: transform 0.1s ease-out; */
+}
+
+.turtle-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+#coordDisplay {
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.speed-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.speed-control input[type="range"] {
+    width: 150px;
+}
