@@ -313,7 +313,7 @@ function draw() {
 function redrawExecutedCommands() {
     background(255);
     t.setInitValues();
-    commandQueue = executedCommands;
+    commandQueue = executedCommands.concat(commandQueue);
     executedCommands = [];
 }
 
@@ -475,12 +475,17 @@ function setupCoordinateSystem() {
 function setupSpeedControl() {
     const speedSlider = document.getElementById('speedSlider');
     const speedValue = document.getElementById('speedValue');
+    const restartButton = document.getElementById('restartExecution');
     
     // Load saved speed from localStorage
     const savedDelay = localStorage.getItem('commandDelay') || '0';
     commandDelay = parseInt(savedDelay);
     speedSlider.value = commandDelay;
     updateSpeedLabel(commandDelay);
+
+    restartButton.addEventListener('click', () => {
+        redrawExecutedCommands();
+    });
     
     speedSlider.addEventListener('input', (e) => {
         commandDelay = parseInt(e.target.value);

@@ -1,14 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <title>Turtle</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turtle Graphics Studio</title>
     <link rel="favicon" type="image/x-icon" href="favicon.ico">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.3/p5.min.js"
         integrity="sha512-0zGLOFv/+OQ6YfVCSGDQWhrDRx0ONmBqWvs3gI4olm8i6xtKoG1FhEnB4eTaWCVnojyfUDgE8Izeln+mAJAkFA=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="turtle.js"></script>
-    <!-- <script src="testSketch.js"></script> -->
+    <script src="debug.js"></script>
     <script type="module">
         fetch('testSketch.js')
             .then(response => response.text())
@@ -22,34 +24,98 @@
 </head>
 
 <body>
-    <div class="canvas-container">
-        <main></main>
-        <div class="canvas-controls">
-            <div class="size-controls">
-                <label>Width: <input type="number" id="canvasWidth" value="700" min="100" max="2000"></label>
-                <label>Height: <input type="number" id="canvasHeight" value="700" min="100" max="2000"></label>
-                <button id="applySize">Apply</button>
-                <button id="resetSize">Reset</button>
-            </div>
-            <div class="turtle-controls">
-                <label><input type="checkbox" id="showTurtle" checked> Show Turtle</label>
-                <label><input type="checkbox" id="showGrid"> Show Grid</label>
-                <div class="speed-control">
-                    <label>Speed: <span id="speedValue">Instant</span></label>
-                    <input type="range" id="speedSlider" min="0" max="1000" step="50" value="0">
-                </div>
-            </div>
-            <div class="documentation-links">
-                <a href="https://hanumanum.github.io/js-turtle/index_en.html" target="_blank">JS Turtle
-                    Documentation</a>
-                <a href="https://p5js.org/reference/" target="_blank">p5.js Documentation</a>
-            </div>
-            <div class="export-controls">
-                <button id="copyCanvas">Copy to Clipboard</button>
-                <button id="downloadCanvas">Download Image</button>
-            </div>
+    <header class="header">
+        <!-- <h1>Turtle Graphics Studio</h1> -->
+    </header>
+
+    <aside class="side-panel">
+        <div class="panel-content code-display">
+            <pre><code>
+forward(100)
+right(90)
+forward(100)
+<span class="code-line current">right(90)</span>
+forward(100)
+right(90)
+forward(100)
+            </code></pre>
         </div>
-    </div>
+        <div class="control-group">
+            <label for="speedSlider">Execution Speed</label>
+            <input type="range" id="speedSlider" min="0" max="2000" step="100" value="0">
+            <span id="speedValue">Instant</span>
+        </div>
+        <div class="control-group">
+            <button id="restartExecution">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 2v6h6"></path>
+                    <path d="M3 13a9 9 0 1 0 3-7.7L3 8"></path>
+                </svg>
+                Restart
+            </button>
+            <button id="nextCommand">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                    <line x1="19" y1="5" x2="19" y2="19"></line>
+                </svg>
+                Next Command
+            </button>
+        </div>
+    </aside>
+
+    <main id="canvasContainer"></main>
+
+    <aside class="side-panel">
+        <div class="panel-content">
+            <!-- Right panel content will go here -->
+        </div>
+    </aside>
+
+    <footer class="bottom-controls">
+        <div class="control-group">
+            <label for="canvasWidth">Canvas Width</label>
+            <input type="number" id="canvasWidth" value="700" min="100" max="2000">
+        </div>
+        <div class="control-group">
+            <label for="canvasHeight">Canvas Height</label>
+            <input type="number" id="canvasHeight" value="700" min="100" max="2000">
+        </div>
+        <div class="control-group">
+            <button id="applySize">Apply Size</button>
+            <button id="resetSize">Reset Size</button>
+        </div>
+        <div class="checkbox-group">
+            <label>
+                <input type="checkbox" id="showTurtle" checked>
+                Show Turtle
+            </label>
+            <label>
+                <input type="checkbox" id="showGrid">
+                Show Grid
+            </label>
+        </div>
+        <div class="control-group">
+            <button id="copyCanvas">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                Copy Drawing
+            </button>
+            <button id="downloadCanvas">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Download Drawing
+            </button>
+        </div>
+    </footer>
 </body>
 
 </html>

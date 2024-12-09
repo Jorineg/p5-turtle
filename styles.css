@@ -1,117 +1,131 @@
-body {
-    margin: 0;
-    padding: 20px;
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    background: #f5f5f5;
+:root {
+    --bg-color: #2c2c2c;
+    --text-color: #e0e0e0;
+    --accent-color: #4a90e2;
+    --secondary-color: #5a6f8c;
+    --tertiary-color: #3c4858;
+    --panel-width: 300px;
 }
 
-.canvas-container {
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: grid;
+    grid-template-columns: var(--panel-width) 1fr var(--panel-width);
+    grid-template-rows: auto 1fr auto;
+    gap: 20px;
+    height: 100vh;
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.header {
+    grid-column: 1 / -1;
+    text-align: center;
+}
+
+.side-panel {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
 }
 
-main {
+.panel-content {
+    background-color: var(--tertiary-color);
+    border-radius: 10px;
+    padding: 15px;
+    height: 300px;
+    overflow-y: auto;
+}
+
+#canvasContainer {
+    grid-column: 2;
+    grid-row: 2;
     display: flex;
     justify-content: center;
-    padding: 0;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    width: fit-content;
-    margin: 0 auto;
-    overflow: hidden;
-    height: 700px;
-}
-
-main canvas {
-    display: block;
-    border-radius: 8px;
-}
-
-.canvas-controls {
-    display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 15px;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background-color: var(--tertiary-color);
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.size-controls {
+.control-group {
     display: flex;
-    gap: 15px;
-    align-items: center;
+    flex-direction: column;
+    gap: 10px;
+}
+
+input[type="number"],
+input[type="range"] {
+    padding: 8px;
+    border: none;
+    border-radius: 5px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
 }
 
 input[type="number"] {
     width: 80px;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
 }
 
 button {
-    padding: 8px 16px;
+    padding: 10px 15px;
     border: none;
-    border-radius: 4px;
-    background: #4CAF50;
-    color: white;
+    border-radius: 5px;
+    background-color: var(--accent-color);
+    color: var(--text-color);
     cursor: pointer;
-    font-size: 14px;
-    transition: background 0.2s;
+    transition: background-color 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
 }
 
 button:hover {
-    background: #45a049;
+    background-color: var(--secondary-color);
 }
 
-#resetSize {
-    background: #f44336;
-}
-
-#resetSize:hover {
-    background: #da190b;
-}
-
-.documentation-links {
+.bottom-controls {
+    grid-column: 2;
     display: flex;
-    gap: 15px;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    background-color: var(--tertiary-color);
+    padding: 20px;
+    border-radius: 10px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-.documentation-links a {
-    color: #2196F3;
-    text-decoration: none;
+.bottom-controls .control-group {
+    flex: 0 1 auto;
+}
+
+.code-display {
+    font-family: 'Courier New', Courier, monospace;
     font-size: 14px;
+    line-height: 1.5;
 }
 
-.documentation-links a:hover {
-    text-decoration: underline;
+.code-line {
+    padding: 2px 5px;
+    border-radius: 3px;
 }
 
-.export-controls {
+.code-line.current {
+    background-color: var(--accent-color);
+    color: var(--bg-color);
+}
+
+.checkbox-group {
     display: flex;
-    gap: 15px;
-}
-
-#copyCanvas {
-    background: #2196F3;
-}
-
-#copyCanvas:hover {
-    background: #1976D2;
-}
-
-#downloadCanvas {
-    background: #673AB7;
-}
-
-#downloadCanvas:hover {
-    background: #5E35B1;
+    flex-direction: column;
+    gap: 5px;
 }
 
 .turtle-marker {
@@ -120,29 +134,8 @@ button:hover {
     height: 0;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
-    border-bottom: 24px solid #4CAF50;
+    border-bottom: 24px solid var(--accent-color);
     transform-origin: 50% 100%;
     pointer-events: none;
     /* transition: transform 0.1s ease-out; */
-}
-
-.turtle-controls {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-#coordDisplay {
-    pointer-events: none;
-    z-index: 1000;
-}
-
-.speed-control {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.speed-control input[type="range"] {
-    width: 150px;
 }
