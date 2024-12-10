@@ -13,43 +13,88 @@ body {
     color: var(--text-color);
     display: grid;
     grid-template-columns: var(--panel-width) 1fr var(--panel-width);
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: min-content 1fr;
     gap: 20px;
     height: 100vh;
     margin: 0;
+    margin-top: 15px;
     padding: 20px;
     box-sizing: border-box;
+    overflow: hidden;
+    max-height: 100vh;
+}
+
+html {
+    overflow: hidden;
 }
 
 .header {
     grid-column: 1 / -1;
     text-align: center;
+    display: none;
 }
 
 .side-panel {
     display: flex;
     flex-direction: column;
     gap: 20px;
+    overflow: hidden;
+    max-height: calc(100vh - 50px);
+}
+
+.side-panel-right {
+    grid-column: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow: hidden;
+    max-height: calc(100vh - 50px);
 }
 
 .panel-content {
     background-color: var(--tertiary-color);
     border-radius: 10px;
     padding: 15px;
-    height: 300px;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
 }
 
 #canvasContainer {
     grid-column: 2;
-    grid-row: 2;
+    grid-row: 1;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    justify-content: flex-start;
     align-items: center;
     background-color: var(--tertiary-color);
     border-radius: 10px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: calc(100% - 40px);
+    margin: 0 auto;
+    padding: 20px;
+    min-height: min-content;
+    position: relative;
 }
+
+.p5Canvas {
+    max-width: 100% !important;
+    max-height: 650px !important;
+    width: auto !important;
+    height: auto !important;
+    aspect-ratio: attr(width) / attr(height);
+    object-fit: contain;
+    position: relative;
+    margin-bottom: 20px;
+    z-index: 1;
+    order: -1;
+    border-radius: 10px;
+    border: 1px solid var(--text-color);
+    cursor: crosshair;
+}
+
 
 .control-group {
     display: flex;
@@ -77,7 +122,7 @@ button {
     background-color: var(--accent-color);
     color: var(--text-color);
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, opacity 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -85,14 +130,22 @@ button {
     width: 100%;
 }
 
-button:hover {
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--secondary-color);
+}
+
+button:hover:not(:disabled) {
     background-color: var(--secondary-color);
 }
 
 .bottom-controls {
     grid-column: 2;
+    grid-row: 1;
     display: flex;
     flex-wrap: wrap;
+    align-self: flex-end;
     gap: 20px;
     justify-content: center;
     background-color: var(--tertiary-color);
@@ -100,7 +153,9 @@ button:hover {
     border-radius: 10px;
     width: 100%;
     box-sizing: border-box;
+    margin-top: auto;
 }
+
 
 .bottom-controls .control-group {
     flex: 0 1 auto;
@@ -108,8 +163,10 @@ button:hover {
 
 .code-display {
     font-family: 'Courier New', Courier, monospace;
-    font-size: 14px;
+    font-size: 18px;
     line-height: 1.5;
+    flex: 1;
+    overflow-y: auto;
 }
 
 .code-line {
@@ -137,5 +194,106 @@ button:hover {
     border-bottom: 24px solid var(--accent-color);
     transform-origin: 50% 100%;
     pointer-events: none;
+    z-index: 100;
     /* transition: transform 0.1s ease-out; */
+}
+
+.theme-switcher {
+    position: absolute;
+    top: 25px;
+    right: 25px;
+    z-index: 10;
+    display: flex;
+    gap: 10px;
+}
+
+.theme-switcher button {
+    width: 40px;
+    height: 40px;
+    padding: 8px;
+    border-radius: 50%;
+    background-color: var(--tertiary-color);
+}
+
+.theme-switcher button:hover {
+    background-color: var(--secondary-color);
+}
+
+/* Add these light theme variables */
+[data-theme="light"] {
+    --bg-color: #ffffff;
+    --text-color: #333333;
+    --accent-color: #4a90e2;
+    --secondary-color: #7fa7d4;
+    --tertiary-color: #f0f0f0;
+}
+
+.console-display {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 16px;
+    line-height: 1.4;
+    overflow-y: auto;
+    min-height: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    flex: 1;
+}
+
+.console-message {
+    padding: 4px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.console-timestamp {
+    color: #888;
+    margin-right: 8px;
+}
+
+.console-error {
+    color: #ff6b6b;
+    background-color: rgba(255, 107, 107, 0.1);
+}
+
+.console-warn {
+    color: #ffd93d;
+    background-color: rgba(255, 217, 61, 0.1);
+}
+
+.console-info {
+    color: #6bddff;
+    background-color: rgba(107, 221, 255, 0.1);
+}
+
+.console-debug {
+    color: #b8b8b8;
+    background-color: rgba(184, 184, 184, 0.1);
+}
+
+/* Adjust for light theme */
+[data-theme="light"] .console-message {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .console-timestamp {
+    color: #666;
+}
+
+[data-theme="light"] .console-error {
+    color: #d63031;
+    background-color: rgba(214, 48, 49, 0.1);
+}
+
+[data-theme="light"] .console-warn {
+    color: #fdcb6e;
+    background-color: rgba(253, 203, 110, 0.1);
+}
+
+[data-theme="light"] .console-info {
+    color: #0984e3;
+    background-color: rgba(9, 132, 227, 0.1);
+}
+
+[data-theme="light"] .console-debug {
+    color: #636e72;
+    background-color: rgba(99, 110, 114, 0.1);
 }

@@ -9,40 +9,26 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.3/p5.min.js"
         integrity="sha512-0zGLOFv/+OQ6YfVCSGDQWhrDRx0ONmBqWvs3gI4olm8i6xtKoG1FhEnB4eTaWCVnojyfUDgE8Izeln+mAJAkFA=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="theme.js"></script>
     <script src="turtle.js"></script>
-    <script src="debug.js"></script>
-    <script type="module">
-        fetch('testSketch.js')
-            .then(response => response.text())
-            .then(code => {
-                const script = document.createElement('script');
-                script.textContent = `(function() { \n${code}\n })();`;
-                document.head.appendChild(script);
-            });
-    </script>
+    <script src="executionLogic.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
+    <div id="script-file-name" data-filename="testSketch.js" style="display: none;"></div>
     <header class="header">
-        <!-- <h1>Turtle Graphics Studio</h1> -->
+        <h1>Turtle Graphics Studio</h1>
     </header>
 
     <aside class="side-panel">
         <div class="panel-content code-display">
-            <pre><code>
-forward(100)
-right(90)
-forward(100)
-<span class="code-line current">right(90)</span>
-forward(100)
-right(90)
-forward(100)
+            <pre><code id="code-display"></code>
             </code></pre>
         </div>
         <div class="control-group">
             <label for="speedSlider">Execution Speed</label>
-            <input type="range" id="speedSlider" min="0" max="2000" step="100" value="0">
+            <input type="range" id="speedSlider" min="0" max="11" step="1" value="0">
             <span id="speedValue">Instant</span>
         </div>
         <div class="control-group">
@@ -65,57 +51,80 @@ forward(100)
         </div>
     </aside>
 
-    <main id="canvasContainer"></main>
 
-    <aside class="side-panel">
+    <aside class="side-panel-right">
         <div class="panel-content">
             <!-- Right panel content will go here -->
         </div>
     </aside>
 
-    <footer class="bottom-controls">
-        <div class="control-group">
-            <label for="canvasWidth">Canvas Width</label>
-            <input type="number" id="canvasWidth" value="700" min="100" max="2000">
-        </div>
-        <div class="control-group">
-            <label for="canvasHeight">Canvas Height</label>
-            <input type="number" id="canvasHeight" value="700" min="100" max="2000">
-        </div>
-        <div class="control-group">
-            <button id="applySize">Apply Size</button>
-            <button id="resetSize">Reset Size</button>
-        </div>
-        <div class="checkbox-group">
-            <label>
-                <input type="checkbox" id="showTurtle" checked>
-                Show Turtle
-            </label>
-            <label>
-                <input type="checkbox" id="showGrid">
-                Show Grid
-            </label>
-        </div>
-        <div class="control-group">
-            <button id="copyCanvas">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+
+    <main id="canvasContainer">
+        <div class="theme-switcher">
+            <button id="themeToggle" aria-label="Toggle theme">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    <circle cx="12" cy="12" r="5" />
+                    <path
+                        d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
                 </svg>
-                Copy Drawing
             </button>
-            <button id="downloadCanvas">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                Download Drawing
-            </button>
+            <a href="https://p5js.org/reference/" target="_blank" aria-label="P5.js Reference">
+                <button>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                </button>
+            </a>
         </div>
-    </footer>
+        
+        <div class="bottom-controls">
+            <div class="control-group">
+                <label for="canvasWidth">Canvas Width</label>
+                <input type="number" id="canvasWidth" value="700" min="100" max="2000">
+            </div>
+            <div class="control-group">
+                <label for="canvasHeight">Canvas Height</label>
+                <input type="number" id="canvasHeight" value="700" min="100" max="2000">
+            </div>
+            <div class="control-group">
+                <button id="applySize">Apply Size</button>
+                <button id="resetSize">Reset Size</button>
+            </div>
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" id="showTurtle" checked>
+                    Show Turtle
+                </label>
+                <label>
+                    <input type="checkbox" id="showGrid">
+                    Show Grid
+                </label>
+            </div>
+            <div class="control-group">
+                <button id="copyCanvas">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    Copy Drawing
+                </button>
+                <button id="downloadCanvas">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download Drawing
+                </button>
+            </div>
+        </div>
+    </main>
 </body>
 
 </html>
