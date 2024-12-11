@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Add no-transition class to body immediately
+    document.body.classList.add('no-transition');
     const themeToggle = document.getElementById('themeToggle');
 
     // Set initial theme from localStorage or default to dark
@@ -12,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.documentElement.setAttribute('data-theme', newTheme);
         localStorage.setItem('theme', newTheme);
         updateThemeIcon(newTheme);
-        redrawExecutedCommands();
+        initializeTurtleExecution();
     });
 
     function updateThemeIcon(theme) {
@@ -25,4 +27,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
                </svg>`;
     }
+
+    const leftPanel = document.querySelector('.side-panel');
+    const rightPanel = document.querySelector('.side-panel-right');
+    const leftButton = document.querySelector('.collapse-left');
+    const rightButton = document.querySelector('.collapse-right');
+
+    // Set initial collapse states from localStorage or default to not collapsed
+    const leftCollapsed = localStorage.getItem('leftPanelCollapsed') === 'true';
+    const rightCollapsed = localStorage.getItem('rightPanelCollapsed') === 'true';
+
+    // Apply initial states
+    if (leftCollapsed) {
+        leftPanel.classList.add('collapsed');
+        leftButton.classList.add('collapsed');
+    }
+    if (rightCollapsed) {
+        rightPanel.classList.add('collapsed');
+        rightButton.classList.add('collapsed');
+    }
+    // Remove no-transition class after a brief timeout
+    setTimeout(() => {
+        document.body.classList.remove('no-transition');
+    }, 500);
+
+    leftButton.addEventListener('click', () => {
+        leftPanel.classList.toggle('collapsed');
+        leftButton.classList.toggle('collapsed');
+        localStorage.setItem('leftPanelCollapsed', leftPanel.classList.contains('collapsed'));
+    });
+
+    rightButton.addEventListener('click', () => {
+        rightPanel.classList.toggle('collapsed');
+        rightButton.classList.toggle('collapsed');
+        localStorage.setItem('rightPanelCollapsed', rightPanel.classList.contains('collapsed'));
+    });
 }); 

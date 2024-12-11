@@ -1,9 +1,12 @@
 let commandQueue = [];
-let executedCommands = [];
 let lastCommandTime = 0;
 let commandDelay = 0; // 0 means instant execution
 let orginalP5Functions = {};
 let modifiedP5Functions = {};
+let defaultColor;
+const maxCommandsHistory = 200;
+let commandHistoryDeletedCount = 0;
+let commandQueueExecutionIndex = 0;
 
 // Globale Turtle-Instanz
 let t;
@@ -39,10 +42,6 @@ function color(...args) {
 
 function width(w) {
     commandQueue.push([() => t.width(w), [w]]);
-}
-
-function clear() {
-    commandQueue.push([() => background(255), []]);
 }
 
 function angle(a) {
@@ -131,6 +130,12 @@ function drawGrid(size = 50) {
     }
 }
 
+function updateGrid() {
+    if (t.showingGrid) {
+        drawGrid(t.gridSize);
+    }
+}
+
 function showGrid(size = 50) {
     t.gridSize = size;
     t.showingGrid = true;
@@ -153,18 +158,46 @@ function getY() {
     return t.y;
 }
 
+// save translation and scale, scale to flip y axis
+// restore translation and scale
+function _text(text, ...args) {
+    let [x, y] = [t.x, t.y];
+    if (args.length === 2) {
+        x = args[0];
+        y = args[1];
+    }
+    orginalP5Functions["push"].apply(p5.instance);
+    orginalP5Functions["translate"].apply(p5.instance, [x, y]);
+    orginalP5Functions["scale"].apply(p5.instance, [1, -1]);
+    p5.instance.useOriginal = true;
+    orginalP5Functions["text"].apply(p5.instance, [text, 0, 0]);
+    p5.instance.useOriginal = false;
+    orginalP5Functions["pop"].apply(p5.instance);
+}
+
 
 function wrapP5Functions(p5Instance) {
-    const excludeFunctions = ["redraw", "callRegisteredHooksFor", "color", "resetMatrix"]
+    const excludeFunctions = ["redraw", "callRegisteredHooksFor", "color", "resetMatrix", "text"]
     for (let key in p5Instance) {
         if (typeof p5Instance[key] === 'function' && !key.startsWith("_") && !excludeFunctions.includes(key)) {
             orginalP5Functions[key] = p5Instance[key];
             p5Instance[key] = function (...args) {
-                commandQueue.push([() => orginalP5Functions[key].apply(p5Instance, args), args, key]);
+                if (p5Instance.useOriginal) {
+                    orginalP5Functions[key].apply(p5Instance, args);
+                } else {
+                    commandQueue.push([() => orginalP5Functions[key].apply(p5Instance, args), args, key]);
+                }
             };
             modifiedP5Functions[key] = p5Instance[key];
         }
     }
+
+    // wrap text separately
+    modifiedP5Functions["text"] = function (...args) {
+        commandQueue.push([() => _text(...args), args, "text"]);
+    }
+    orginalP5Functions["text"] = p5Instance["text"];
+    p5Instance["text"] = modifiedP5Functions["text"];
 }
 
 
@@ -179,7 +212,6 @@ const turtleFunctions = {
     goto,
     color,
     width,
-    clear,
     angle,
     showTurtle,
     hideTurtle,
@@ -195,7 +227,6 @@ Object.assign(globalThis, turtleFunctions);
 
 // Modify the command execution to set the flag
 function executeCommand(cmd) {
-    executedCommands.push(cmd);
     cmd[0]();
 }
 
@@ -203,11 +234,19 @@ function getCommandString(cmd) {
     if (!cmd) return '';
     const funcStr = cmd[0].toString();
     const match = funcStr.match(/t\.(\w+)/);
+    // iterate over args and add "" to str types
+    let args = []
+    for (let i = 0; i < cmd[1].length; i++) {
+        if (typeof cmd[1][i] === 'string') {
+            args.push(`"${cmd[1][i]}"`);
+        } else {
+            args.push(cmd[1][i]);
+        }
+    }
     if (match) {
-        const args = cmd[1];
         return `${match[1]}(${args.join(', ')})`;
     } else if (cmd[2]) {
-        return `${cmd[2]}(${cmd[1].join(', ')})`;
+        return `${cmd[2]}(${args.join(', ')})`;
     }
     return "Unknown Command";
 }
@@ -215,13 +254,42 @@ function getCommandString(cmd) {
 
 function updateCommandDisplay() {
     const commandDisplay = document.getElementById('code-display');
-    const executedCommandsText = executedCommands.map(cmd => getCommandString(cmd)).join('\n');
-    const commandQueueText = commandQueue.map((cmd, index) => {
-        const commandString = getCommandString(cmd);
-        return index === 0 ? `<span class="code-line current">${commandString}</span>` : commandString;
-    }).join('\n');
 
-    commandDisplay.innerHTML = `${executedCommandsText}\n${commandQueueText}`;
+    // Split command queue into executed and pending commands
+    const executedCommands = commandQueue.slice(0, commandQueueExecutionIndex);
+    const pendingCommands = commandQueue.slice(commandQueueExecutionIndex);
+
+    // Handle executed commands display
+    let executedCommandsDisplay = executedCommands;
+    let executedHiddenCount = commandHistoryDeletedCount;
+    if (executedCommandsDisplay.length > maxCommandsHistory) {
+        executedHiddenCount += executedCommandsDisplay.length - maxCommandsHistory;
+        executedCommandsDisplay = executedCommandsDisplay.slice(-maxCommandsHistory);
+    }
+
+    // Handle pending commands display
+    let pendingCommandsDisplay = pendingCommands;
+    let pendingHiddenCount = 0;
+    if (pendingCommandsDisplay.length > maxCommandsHistory) {
+        pendingHiddenCount = pendingCommandsDisplay.length - maxCommandsHistory;
+        pendingCommandsDisplay = pendingCommandsDisplay.slice(0, maxCommandsHistory);
+    }
+
+    // Build display text
+    const executedCommandsText = [
+        executedHiddenCount > 0 ? `... (${executedHiddenCount} more commands)` : '',
+        ...executedCommandsDisplay.map(cmd => getCommandString(cmd))
+    ].filter(Boolean).join('\n');
+
+    const pendingCommandsText = [
+        ...pendingCommandsDisplay.map((cmd, index) => {
+            const commandString = getCommandString(cmd);
+            return index === 0 ? `<span class="code-line current">${commandString}</span>` : commandString;
+        }),
+        pendingHiddenCount > 0 ? `... (${pendingHiddenCount} more commands)` : ''
+    ].filter(Boolean).join('\n');
+
+    commandDisplay.innerHTML = `${executedCommandsText}\n${pendingCommandsText}`;
 }
 
 function setSize(w, h) {
@@ -246,9 +314,24 @@ function setSize(w, h) {
     }, [w, h]]);
 }
 
-// Load the turtle script
+let currentScriptController = null;
+
 function loadTurtleScript() {
     const scriptFileName = document.getElementById('script-file-name').getAttribute('data-filename');
+
+    // Clean up any existing script
+    if (currentScriptController) {
+        currentScriptController.abort();
+        // Clear any existing intervals/timeouts
+        for (let i = setTimeout(function () { }, 0); i > 0; i--) {
+            window.clearTimeout(i);
+            window.clearInterval(i);
+        }
+    }
+
+    // Create new abort controller
+    currentScriptController = new AbortController();
+    const signal = currentScriptController.signal;
 
     fetch(scriptFileName)
         .then(response => response.text())
@@ -261,18 +344,41 @@ function loadTurtleScript() {
                 script.textContent = `
                     (function() { 
                         try {
+                            // Add signal check in loop to allow interruption
+                            const originalSetInterval = window.setInterval;
+                            window.setInterval = (fn, delay, ...args) => {
+                                const id = originalSetInterval(() => {
+                                    if (currentScriptController.signal.aborted) {
+                                        clearInterval(id);
+                                        return;
+                                    }
+                                    fn(...args);
+                                }, delay);
+                                return id;
+                            };
+
                             ${code}
                         } catch (error) {
-                            // Extract line number from stack trace
                             const match = error.stack.match(/<anonymous>:([0-9]+):/);
-                            const lineNumber = match ? match[1] - 2 : 'unknown'; // Subtract 2 to account for the wrapper function
+                            const lineNumber = match ? match[1] - 2 : 'unknown';
                             console.error(\`Runtime error at line \${lineNumber}: \${error.message}\`);
                         }
                     })();
                 `;
+
+                // Add ability to remove script
+                script.setAttribute('data-turtle-script', 'true');
                 document.head.appendChild(script);
+
+                // Listen for abort signal
+                signal.addEventListener('abort', () => {
+                    // Remove the script
+                    script.remove();
+                    // Restore original setInterval
+                    window.setInterval = originalSetInterval;
+                });
+
             } catch (error) {
-                // For syntax errors, the line number is usually available in error.lineNumber
                 const lineNumber = error.lineNumber || 'unknown';
                 console.error(`Syntax error at line ${lineNumber - 2}: ${error.message}`);
             }
@@ -282,11 +388,30 @@ function loadTurtleScript() {
         });
 }
 
-function setThemeP5Styles() {
-    const tertiaryColor = getComputedStyle(document.documentElement).getPropertyValue('--tertiary-color');
-    const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-color');
-    orginalP5Functions["background"].apply(p5.instance, [tertiaryColor]);
-    orginalP5Functions["stroke"].apply(p5.instance, [textColor]);
+// Add a function to stop the current script
+function stopTurtleScript() {
+    if (currentScriptController) {
+        currentScriptController.abort();
+        // Remove any scripts we added
+        document.querySelectorAll('script[data-turtle-script="true"]')
+            .forEach(script => script.remove());
+        console.log('Script execution stopped');
+    }
+}
+
+function setInitP5Styles() {
+    defaultColor = getComputedStyle(document.documentElement).getPropertyValue('--text-color');
+    orginalP5Functions["stroke"].apply(p5.instance, [defaultColor]);
+    orginalP5Functions["strokeCap"].apply(p5.instance, [SQUARE]);
+    orginalP5Functions["noFill"].apply(p5.instance);
+    orginalP5Functions["clear"].apply(p5.instance);
+    orginalP5Functions["frameRate"].apply(p5.instance, [120]);
+    orginalP5Functions["strokeWeight"].apply(p5.instance, [1]);
+    resetMatrix(); // function not wrapped
+    orginalP5Functions["translate"].apply(p5.instance, [t.canvasWidth / 2, t.canvasHeight / 2]);
+    orginalP5Functions["scale"].apply(p5.instance, [1, -1]);
+    // text size and font
+    orginalP5Functions["textFont"].apply(p5.instance, ["Segoe UI", 20]);
 }
 
 function adjustCanvasDisplay() {
@@ -313,10 +438,6 @@ function setup() {
     let [width, height] = setupSizeControls();
     createCanvas(width, height);
     adjustCanvasDisplay();
-    background(255);
-    strokeCap(SQUARE);
-    frameRate(120);
-    noFill();
     t = new Turtle(width, height);
 
     setupExportControls();
@@ -342,10 +463,18 @@ function setup() {
         }
     };
 
+
+    const scriptFileNameElement = document.getElementById('script-file-name');
+    //add on change event listener to the script file name
+    scriptFileNameElement.addEventListener('change', (e) => {
+        initializeTurtleExecution();
+    });
+
     // remove height property from main element
     document.querySelector('main').style.height = 'auto';
 
     setupCoordinateSystem();
+    setupResizeObserver();
 
     // Add grid checkbox handler
     document.getElementById('showGrid').onchange = (e) => {
@@ -359,7 +488,7 @@ function setup() {
     setupSpeedControl();
     lastCommandTime = new Date().getTime();
     wrapP5Functions(p5.instance);
-    setThemeP5Styles();
+    setInitP5Styles();
     wrapConsole();
 }
 
@@ -373,12 +502,21 @@ function draw() {
     orginalP5Functions["translate"].apply(p5.instance, [t.canvasWidth / 2, t.canvasHeight / 2]);
     orginalP5Functions["scale"].apply(p5.instance, [1, -1]);
 
-    while (commandQueue.length > 0 &&
+    while (commandQueue.length > commandQueueExecutionIndex &&
         (commandDelay === 0 || currentTime - lastCommandTime >= commandDelay)) {
-        const cmd = commandQueue.shift();
+        const cmd = commandQueue[commandQueueExecutionIndex];
         executeCommand(cmd);
         lastCommandTime += commandDelay;
+        commandQueueExecutionIndex++;
     }
+
+    if (commandQueueExecutionIndex >= 3 * maxCommandsHistory) {
+        const elementsToRemove = commandQueueExecutionIndex - maxCommandsHistory;
+        commandQueue.splice(0, elementsToRemove);
+        commandQueueExecutionIndex -= elementsToRemove;
+        commandHistoryDeletedCount += elementsToRemove;
+    }
+
 
     updateCommandDisplay();
     if (frameCount === 1) {
@@ -386,12 +524,16 @@ function draw() {
     }
 }
 
-function redrawExecutedCommands() {
-    setThemeP5Styles();
+function initializeTurtleExecution() {
+    setInitP5Styles();
     t.setInitValues();
     lastCommandTime = new Date().getTime();
-    commandQueue = executedCommands.concat(commandQueue);
     executedCommands = [];
+    commandQueue = [];
+    commandHistoryDeletedCount = 0;
+    commandQueueExecutionIndex = 0;
+    resetConsoleDisplay();
+    loadTurtleScript();
 }
 
 function setupExportControls() {
@@ -447,10 +589,6 @@ function setupSizeControls() {
     document.getElementById('canvasWidth').value = savedWidth;
     document.getElementById('canvasHeight').value = savedHeight;
 
-    // Apply saved size on startup
-    // setSize(parseInt(savedWidth), parseInt(savedHeight));
-    // commandQueue.push(() => setSize(parseInt(savedWidth), parseInt(savedHeight)));
-
     // Handle apply button click
     document.getElementById('applySize').onclick = () => {
         const width = parseInt(document.getElementById('canvasWidth').value);
@@ -466,13 +604,6 @@ function setupSizeControls() {
 
     // Handle reset button click
     document.getElementById('resetSize').onclick = () => {
-        // const defaultWidth = 700;
-        // const defaultHeight = 700;
-
-        // // Update inputs
-        // document.getElementById('canvasWidth').value = defaultWidth;
-        // document.getElementById('canvasHeight').value = defaultHeight;
-
         // Clear localStorage
         localStorage.removeItem('canvasWidth');
         localStorage.removeItem('canvasHeight');
@@ -480,6 +611,16 @@ function setupSizeControls() {
         location.reload();
     };
     return [parseInt(savedWidth), parseInt(savedHeight)];
+}
+
+function setupResizeObserver() {
+    const canvasContainer = document.getElementById('canvasContainer');
+    t.resizeObserver = new ResizeObserver(() => {
+        t.updateCanvasRect();
+        t.updateTurtleVisual();
+        updateGrid();
+    });
+    t.resizeObserver.observe(canvasContainer);
 }
 
 
@@ -545,7 +686,7 @@ function setupSpeedControl() {
     nextCommandButton.disabled = commandDelay !== Infinity;
 
     restartButton.addEventListener('click', () => {
-        redrawExecutedCommands();
+        initializeTurtleExecution();
     });
 
     nextCommandButton.addEventListener('click', () => {
@@ -558,14 +699,18 @@ function setupSpeedControl() {
         }
         commandDelay = updateSpeedLabel(e.target.value);
         localStorage.setItem('commandDelay', e.target.value);
-
-        // Update button state when speed changes
         nextCommandButton.disabled = commandDelay !== Infinity;
+
+        // if commandQueue has 100000+ elements and commandDelay is 0,
+        // reload script
+        if (commandQueue.length > 100000 && commandDelay === 0) {
+            initializeTurtleExecution();
+        }
     });
 }
 
 function updateSpeedLabel(delay) {
-    const speedSteps = [0, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, Infinity];
+    const speedSteps = [0, 0.1, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, Infinity];
 
     const index = parseInt(delay);
     const value = speedSteps[index];
@@ -589,6 +734,13 @@ const originalConsole = {
     info: console.info,
     debug: console.debug
 };
+
+function resetConsoleDisplay() {
+    const consoleDisplay = document.getElementById('consoleDisplay');
+    if (consoleDisplay) {
+        consoleDisplay.innerHTML = '';
+    }
+}
 
 function createConsoleDisplay() {
     const consoleDisplay = document.createElement('div');
@@ -631,7 +783,7 @@ function wrapConsole() {
         consoleDisplay.scrollTop = consoleDisplay.scrollHeight;
 
         // Limit the number of messages (keep last 100)
-        while (consoleDisplay.children.length > 500) {
+        while (consoleDisplay.children.length > 200) {
             consoleDisplay.removeChild(consoleDisplay.firstChild);
         }
     }

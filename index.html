@@ -4,12 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Turtle Graphics Studio</title>
+    <title>JS Turtle</title>
     <link rel="favicon" type="image/x-icon" href="favicon.ico">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.3/p5.min.js"
         integrity="sha512-0zGLOFv/+OQ6YfVCSGDQWhrDRx0ONmBqWvs3gI4olm8i6xtKoG1FhEnB4eTaWCVnojyfUDgE8Izeln+mAJAkFA=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="theme.js"></script>
+    <script src="scriptSelector.js"></script>
     <script src="turtle.js"></script>
     <script src="executionLogic.js"></script>
     <link rel="stylesheet" href="styles.css">
@@ -17,18 +18,32 @@
 
 <body>
     <div id="script-file-name" data-filename="testSketch.js" style="display: none;"></div>
-    <header class="header">
-        <h1>Turtle Graphics Studio</h1>
-    </header>
-
+    <button class="collapse-button collapse-left" aria-label="Toggle left sidebar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+    </button>
     <aside class="side-panel">
-        <div class="panel-content code-display">
-            <pre><code id="code-display"></code>
-            </code></pre>
+        <div class="script-selector">
+            <div class="script-label">Using script:</div>
+            <div class="script-inputs">
+                <select id="scriptSelect">
+                    <option value="" disabled>Select...</option>
+                    <!-- Options will be populated by JavaScript -->
+                </select>
+                <input type="text" id="scriptNameInput" placeholder="Other script">
+            </div>
+        </div>
+        <div class="panel-content">
+            <div class="panel-title">Executed Turtle Commands</div>
+            <div class="code-display">
+                <pre><code id="code-display"></code></pre>
+            </div>
         </div>
         <div class="control-group">
             <label for="speedSlider">Execution Speed</label>
-            <input type="range" id="speedSlider" min="0" max="11" step="1" value="0">
+            <input type="range" id="speedSlider" min="0" max="14" step="1" value="0">
             <span id="speedValue">Instant</span>
         </div>
         <div class="control-group">
@@ -51,13 +66,18 @@
         </div>
     </aside>
 
-
+    <button class="collapse-button collapse-right" aria-label="Toggle right sidebar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+    </button>
     <aside class="side-panel-right">
         <div class="panel-content">
+            <div class="panel-title">Console</div>
             <!-- Right panel content will go here -->
         </div>
     </aside>
-
 
     <main id="canvasContainer">
         <div class="theme-switcher">
@@ -80,7 +100,7 @@
                 </button>
             </a>
         </div>
-        
+
         <div class="bottom-controls">
             <div class="control-group">
                 <label for="canvasWidth">Canvas Width</label>
