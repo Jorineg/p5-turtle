@@ -1,3 +1,4 @@
+console.log("executionLogic.js loaded");
 let commandQueue = [];
 let lastCommandTime = 0;
 let commandDelay = 0; // 0 means instant execution

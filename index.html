@@ -5,16 +5,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JS Turtle</title>
-    <link rel="favicon" type="image/x-icon" href="favicon.ico">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.3/p5.min.js"
         integrity="sha512-0zGLOFv/+OQ6YfVCSGDQWhrDRx0ONmBqWvs3gI4olm8i6xtKoG1FhEnB4eTaWCVnojyfUDgE8Izeln+mAJAkFA=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="theme.js"></script>
-    <script src="scriptSelector.js"></script>
-    <script src="turtle.js"></script>
-    <script src="executionLogic.js"></script>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="icon" type="image/png" sizes="256x256" href="/icon.png">
+    <script>
+        const useLocal = new URLSearchParams(window.location.search).get('dev') === 'true';
+        console.log('dev mode:', useLocal);
+        const baseCDNURL = 'https://cdn.jsdelivr.net/gh/Jorineg/p5-turtle@main';
+
+        const files = [
+            { name: 'theme.js', type: 'script' },
+            { name: 'scriptSelector.js', type: 'script' },
+            { name: 'turtle.js', type: 'script' },
+            { name: 'executionLogic.js', type: 'script' },
+            { name: 'styles.css', type: 'style' }
+        ];
+
+        // Load a single script and return a promise
+        function loadScript(file) {
+            return new Promise((resolve, reject) => {
+                console.log('loading', file.name);
+                const element = document.createElement('script');
+                element.src = useLocal ? `./${file.name}` : `${baseCDNURL}/${file.name}`;
+                element.onload = () => resolve();
+                element.onerror = () => reject();
+                document.head.appendChild(element);
+            });
+        }
+
+        // Load scripts sequentially
+        async function loadAllFiles() {
+            // Load CSS first (non-blocking)
+            const cssFile = files.find(f => f.type === 'style');
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = useLocal ? `./${cssFile.name}` : `${baseCDNURL}/${cssFile.name}`;
+            document.head.appendChild(link);
+
+            // Load scripts in sequence
+            const scripts = files.filter(f => f.type === 'script');
+            for (const file of scripts) {
+                await loadScript(file);
+            }
+
+            // Dispatch custom event when all scripts are loaded
+            document.dispatchEvent(new Event('scriptsLoaded'));
+        }
+
+        loadAllFiles();
+
+        // Handle favicon
+        const favicon = document.createElement('link');
+        favicon.rel = 'icon';
+        favicon.type = 'image/png';
+        favicon.sizes = '256x256';
+        favicon.href = useLocal ? './icon.png' : `${baseCDNURL}/icon.png`;
+        document.head.appendChild(favicon);
+    </script>
 </head>
 
 <body>

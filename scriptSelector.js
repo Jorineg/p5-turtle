@@ -1,3 +1,4 @@
+console.log('scriptSelector.js loaded');
 class ScriptSelector {
     constructor() {
         this.input = document.getElementById('scriptNameInput');
@@ -122,6 +123,6 @@ class ScriptSelector {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('scriptsLoaded', () => {
     window.scriptSelector = new ScriptSelector();
 }); 
