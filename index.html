@@ -14,6 +14,7 @@
     <script src="turtle.js"></script>
     <script src="executionLogic.js"></script>
     <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/png" sizes="256x256" href="/icon.png">
 </head>
 
 <body>
@@ -42,11 +43,14 @@
             </div>
         </div>
         <div class="control-group">
-            <label for="speedSlider">Execution Speed</label>
+            <input type="text" id="manualCommand" placeholder="Enter a command">
+            <label for="speedSlider" style="display: flex; justify-content: space-between; width: 100%;">
+                <span>Execution Delay:</span>
+                <span id="speedValue"></span>
+            </label> </label>
             <input type="range" id="speedSlider" min="0" max="14" step="1" value="0">
-            <span id="speedValue">Instant</span>
         </div>
-        <div class="control-group">
+        <div class="control-group horizontal">
             <button id="restartExecution">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

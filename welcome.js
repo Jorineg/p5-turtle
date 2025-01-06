@@ -7,9 +7,13 @@ textSize(40);
 goto(0, 210);
 text("Turtle Graphics Studio");
 
+imageMode(CENTER);
 // turtle emoji
-textSize(100);
-text("🐢", 0, 100);
+let img = loadImage("./icon.png", () => {
+    scale(1, -1);
+    image(img, 0, -100, 200, 200);
+    scale(1, -1);
+}); 
 
 stroke(defaultColor);
 line(-288, 107, -97, -12);

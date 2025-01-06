@@ -17,12 +17,33 @@ class Turtle {
     setInitValues() {
         this.x = 0;
         this.y = 0;
+        this._x = 0;
+        this._y = 0;
         this.positionAngle = 0;
+        this._positionAngle = 0;
         this.penIsDown = true;
         this.currentColor = [0, 0, 0];
         this.currentWidth = 1;
         this.drawingStarted = false;
         this.updateTurtleVisual();
+    }
+
+    _forward(distance) {
+        this._x += Math.sin(this._positionAngle * PI / 180) * distance;
+        this._y += Math.cos(this._positionAngle * PI / 180) * distance;
+    }
+
+    _left(angle) {
+        this._positionAngle -= angle;
+    }
+
+    _right(angle) {
+        this._positionAngle += angle;
+    }
+
+    _goto(x, y) {
+        this._x = x;
+        this._y = y;
     }
 
     createTurtleElement() {
@@ -35,10 +56,14 @@ class Turtle {
     updateTurtleVisual() {
         if (!this.turtleElement) return;
         let scale = this.canvasRect.width / this.canvasWidth;
-        this.turtleElement.style.left = `${this.canvasRect.left + this.canvasRect.width / 2 + this.x * scale}px`;
-        this.turtleElement.style.top = `${this.canvasRect.top + this.canvasRect.height / 2 - this.y * scale}px`;
-        this.turtleElement.style.transform = `translate(-50%, -100%) rotate(${this.positionAngle}deg)`;
-        this.turtleElement.style.display = this.visible ? 'block' : 'none';
+        let left = this.canvasRect.left + this.canvasRect.width / 2 + this.x * scale;
+        let top = this.canvasRect.top + this.canvasRect.height / 2 - this.y * scale;
+        this.turtleElement.style.left = `${left}px`;
+        this.turtleElement.style.top = `${top}px`;
+        this.turtleElement.style.transform = `translate(-50%, -100%) rotate(${this.positionAngle % 360}deg)`;
+        let positionIsInCanvas = left >= this.canvasRect.left && left <= this.canvasRect.right &&
+            top >= this.canvasRect.top && top <= this.canvasRect.bottom;
+        this.turtleElement.style.display = this.visible && positionIsInCanvas ? 'block' : 'none';
     }
 
     forward(distance) {

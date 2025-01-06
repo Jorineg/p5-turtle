@@ -13,14 +13,17 @@ let t;
 
 // Globale Funktionen
 function forward(distance) {
+    t._forward(distance);
     commandQueue.push([() => t.forward(distance), [distance]]);
 }
 
 function left(angle) {
+    t._left(angle);
     commandQueue.push([() => t.left(angle), [angle]]);
 }
 
 function right(angle) {
+    t._right(angle);
     commandQueue.push([() => t.right(angle), [angle]]);
 }
 
@@ -33,6 +36,7 @@ function penup() {
 }
 
 function goto(x, y) {
+    t._goto(x, y);
     commandQueue.push([() => t.goto(x, y), [x, y]]);
 }
 
@@ -49,13 +53,13 @@ function angle(a) {
 }
 
 function showTurtle() {
-    // commandQueue.push([() => t.showTurtle(), []]);
-    t.showTurtle();
+    commandQueue.push([() => t.showTurtle(), []]);
+    // t.showTurtle();
 }
 
 function hideTurtle() {
-    // commandQueue.push([() => t.hideTurtle(), []]);
-    t.hideTurtle();
+    commandQueue.push([() => t.hideTurtle(), []]);
+    // t.hideTurtle();
 }
 
 // Add new global functions
@@ -90,7 +94,11 @@ function drawGrid(size = 50) {
     const ctx = gridCanvas.getContext('2d');
 
     // Draw main axes
-    ctx.strokeStyle = '#646464'; // rgb(100,100,100)
+    if (document.documentElement.getAttribute('data-theme') === 'dark') {
+        ctx.strokeStyle = "rgb(185, 185, 185)"
+    } else {
+        ctx.strokeStyle = '#646464';
+    }
     ctx.lineWidth = 2;
 
     // Vertical center line
@@ -151,11 +159,11 @@ function hideGrid() {
 }
 
 function getX() {
-    return t.x;
+    return t._x;
 }
 
 function getY() {
-    return t.y;
+    return t._y;
 }
 
 // save translation and scale, scale to flip y axis
@@ -177,9 +185,41 @@ function _text(text, ...args) {
 
 
 function wrapP5Functions(p5Instance) {
+    const functionsWithReturn = [
+        // Calculation
+        "abs", "ceil", "constrain", "dist", "exp", "floor", "lerp",
+        "log", "mag", "map", "max", "min", "norm", "pow", "round",
+        "sq", "sqrt",
+
+        // Trigonometry
+        "acos", "asin", "atan", "atan2", "cos", "sin", "tan",
+
+        // Random
+        "random", "randomGaussian", "randomSeed",
+
+        // Creation/Loading
+        "createCanvas", "createGraphics", "createImage", "createVector",
+        "loadImage", "loadJSON", "loadStrings", "loadTable", "loadXML",
+
+        // Color
+        "color", "lerpColor", "get",
+
+        // Type Conversion
+        "boolean", "byte", "char", "float", "int", "str",
+
+        // Array Functions
+        "append", "concat", "reverse", "shorten", "shuffle", "sort",
+
+        // String Functions
+        "join", "match", "matchAll", "nf", "nfc", "nfp", "nfs", "split", "trim",
+
+        // Systems
+        "focused", "frameCount", "getFrameRate", "millis"
+    ];
+
     const excludeFunctions = ["redraw", "callRegisteredHooksFor", "color", "resetMatrix", "text"]
     for (let key in p5Instance) {
-        if (typeof p5Instance[key] === 'function' && !key.startsWith("_") && !excludeFunctions.includes(key)) {
+        if (typeof p5Instance[key] === 'function' && !key.startsWith("_") && !excludeFunctions.includes(key) && !functionsWithReturn.includes(key)) {
             orginalP5Functions[key] = p5Instance[key];
             p5Instance[key] = function (...args) {
                 if (p5Instance.useOriginal) {
@@ -198,6 +238,13 @@ function wrapP5Functions(p5Instance) {
     }
     orginalP5Functions["text"] = p5Instance["text"];
     p5Instance["text"] = modifiedP5Functions["text"];
+
+    // wrap resetMatrix separately
+    modifiedP5Functions["resetMatrix"] = function (...args) {
+        // do nothing...
+    }
+    orginalP5Functions["resetMatrix"] = p5Instance["resetMatrix"];
+    p5Instance["resetMatrix"] = modifiedP5Functions["resetMatrix"];
 }
 
 
@@ -356,6 +403,9 @@ function loadTurtleScript() {
                                 }, delay);
                                 return id;
                             };
+                            // if(draw && (typeof draw === 'function'){
+                            //     setInterval(draw, )
+                            // }
 
                             ${code}
                         } catch (error) {
@@ -407,9 +457,11 @@ function setInitP5Styles() {
     orginalP5Functions["clear"].apply(p5.instance);
     orginalP5Functions["frameRate"].apply(p5.instance, [120]);
     orginalP5Functions["strokeWeight"].apply(p5.instance, [1]);
-    resetMatrix(); // function not wrapped
+    // resetMatrix(); // function not wrapped
+    orginalP5Functions["resetMatrix"].apply(p5.instance);
     orginalP5Functions["translate"].apply(p5.instance, [t.canvasWidth / 2, t.canvasHeight / 2]);
     orginalP5Functions["scale"].apply(p5.instance, [1, -1]);
+    // translation and scaling is applied in draw for every iteration. Not anymore...
     // text size and font
     orginalP5Functions["textFont"].apply(p5.instance, ["Segoe UI", 20]);
 }
@@ -448,6 +500,7 @@ function setup() {
     } else {
         hideGrid();
     }
+
     if (t.visible) {
         showTurtle();
     } else {
@@ -463,6 +516,18 @@ function setup() {
         }
     };
 
+    document.getElementById('manualCommand').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            try {
+                var result = eval(this.value); // Execute the command
+                this.value = ''; // Clear input
+            } catch (error) {
+                console.error('Command error:', error.message);
+            }
+            if (result) console.log(result);
+            e.preventDefault(); // Prevent form submission
+        }
+    });
 
     const scriptFileNameElement = document.getElementById('script-file-name');
     //add on change event listener to the script file name
@@ -488,19 +553,25 @@ function setup() {
     setupSpeedControl();
     lastCommandTime = new Date().getTime();
     wrapP5Functions(p5.instance);
-    setInitP5Styles();
     wrapConsole();
+    // setInitP5Styles();
 }
 
 
 // Optional: Draw-Funktion, wenn Animation gewünscht ist
 function draw() {
+
+    // I would like to have this in setup, but for some reason it does not work there...
+    if (frameCount === 1) {
+        setInitP5Styles();
+    }
+
     Object.assign(globalThis, turtleFunctions);
     Object.assign(globalThis, modifiedP5Functions);
 
     const currentTime = new Date().getTime();
-    orginalP5Functions["translate"].apply(p5.instance, [t.canvasWidth / 2, t.canvasHeight / 2]);
-    orginalP5Functions["scale"].apply(p5.instance, [1, -1]);
+    // orginalP5Functions["translate"].apply(p5.instance, [t.canvasWidth / 2, t.canvasHeight / 2]);
+    // orginalP5Functions["scale"].apply(p5.instance, [1, -1]);
 
     while (commandQueue.length > commandQueueExecutionIndex &&
         (commandDelay === 0 || currentTime - lastCommandTime >= commandDelay)) {
@@ -516,6 +587,10 @@ function draw() {
         commandQueueExecutionIndex -= elementsToRemove;
         commandHistoryDeletedCount += elementsToRemove;
     }
+
+    // translate back
+    // orginalP5Functions["scale"].apply(p5.instance, [1, -1]);
+    // orginalP5Functions["translate"].apply(p5.instance, [-t.canvasWidth / 2, -t.canvasHeight / 2]);
 
 
     updateCommandDisplay();

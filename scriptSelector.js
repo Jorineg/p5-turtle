@@ -6,10 +6,8 @@ class ScriptSelector {
         this.lastScriptKey = 'lastSelectedScript';
 
         this.predefinedScripts = [
-            'testSketch.js',
+            'welcome.js',
             'turtle.js',
-            'project.js',
-            'sketch.js'
             // Add more predefined scripts from manifest.json here
         ];
 
