@@ -9,9 +9,14 @@
         integrity="sha512-0zGLOFv/+OQ6YfVCSGDQWhrDRx0ONmBqWvs3gI4olm8i6xtKoG1FhEnB4eTaWCVnojyfUDgE8Izeln+mAJAkFA=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
-        const useLocal = new URLSearchParams(window.location.search).get('dev') === 'true';
+        const params = new URLSearchParams(window.location.search);
+        const useLocal = params.get('dev') === 'true';
+        const commitHash = params.get('commit') || 'master';
+
         console.log('dev mode:', useLocal);
-        const baseCDNURL = 'https://cdn.jsdelivr.net/gh/Jorineg/p5-turtle@main';
+        console.log('commit:', commitHash);
+
+        const baseCDNURL = `https://cdn.jsdelivr.net/gh/Jorineg/p5-turtle@${commitHash}`;
 
         const files = [
             { name: 'theme.js', type: 'script' },
