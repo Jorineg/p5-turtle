@@ -11,12 +11,12 @@
     <script>
         const params = new URLSearchParams(window.location.search);
         const useLocal = params.get('dev') === 'true';
-        const commitHash = params.get('commit') || 'latest';    
 
         console.log('dev mode:', useLocal);
-        console.log('commit:', commitHash);
 
-        const baseURL = useLocal ? '' : 'https://cdn.statically.io/gh/Jorineg/p5-turtle/main';
+        // Add timestamp to bust cache
+        const timestamp = Date.now();
+        const baseURL = useLocal ? '' : `https://raw.githubusercontent.com/Jorineg/p5-turtle/master`;
 
         const files = [
             { name: 'theme.js', type: 'script' },
@@ -31,13 +31,15 @@
             return new Promise((resolve, reject) => {
                 console.log('loading', file.name);
                 const element = document.createElement(file.type === 'script' ? 'script' : 'link');
+                const url = useLocal ? `./${file.name}` : `${baseURL}/${file.name}?v=${timestamp}`;
+                
                 if (file.type === 'script') {
-                    element.src = useLocal ? `./${file.name}` : `${baseURL}/${file.name}`;
+                    element.src = url;
                     element.onload = () => resolve();
                     element.onerror = () => reject();
                 } else {
                     element.rel = 'stylesheet';
-                    element.href = useLocal ? `./${file.name}` : `${baseURL}/${file.name}`;
+                    element.href = url;
                     element.onload = () => resolve();
                     element.onerror = () => reject();
                 }
@@ -51,7 +53,7 @@
             const cssFile = files.find(f => f.type === 'style');
             const link = document.createElement('link');
             link.rel = 'stylesheet';
-            link.href = useLocal ? `./${cssFile.name}` : `${baseURL}/${cssFile.name}`;
+            link.href = useLocal ? `./${cssFile.name}` : `${baseURL}/${cssFile.name}?v=${timestamp}`;
             document.head.appendChild(link);
 
             // Load scripts in sequence
@@ -71,7 +73,7 @@
         favicon.rel = 'icon';
         favicon.type = 'image/png';
         favicon.sizes = '256x256';
-        favicon.href = useLocal ? './icon.png' : `${baseURL}/icon.png`;
+        favicon.href = useLocal ? './icon.png' : `${baseURL}/icon.png?v=${timestamp}`;
         document.head.appendChild(favicon);
     </script>
 </head>
