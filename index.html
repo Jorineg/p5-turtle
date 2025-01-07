@@ -16,7 +16,8 @@
 
         // Add timestamp to bust cache
         const timestamp = Date.now();
-        const baseURL = useLocal ? '' : `https://raw.githubusercontent.com/Jorineg/p5-turtle/master`;
+        // Use raw.githack.com for development CDN (no caching)
+        const baseURL = useLocal ? '' : `https://raw.githack.com/Jorineg/p5-turtle/master`;
 
         const files = [
             { name: 'theme.js', type: 'script' },
