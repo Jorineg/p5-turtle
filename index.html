@@ -11,12 +11,12 @@
     <script>
         const params = new URLSearchParams(window.location.search);
         const useLocal = params.get('dev') === 'true';
-        const commitHash = params.get('commit') || 'master';
+        const commitHash = params.get('commit') || 'latest';    
 
         console.log('dev mode:', useLocal);
         console.log('commit:', commitHash);
 
-        const baseCDNURL = `https://cdn.jsdelivr.net/gh/Jorineg/p5-turtle@${commitHash}`;
+        const baseURL = useLocal ? '' : 'https://cdn.statically.io/gh/Jorineg/p5-turtle/main';
 
         const files = [
             { name: 'theme.js', type: 'script' },
@@ -30,10 +30,17 @@
         function loadScript(file) {
             return new Promise((resolve, reject) => {
                 console.log('loading', file.name);
-                const element = document.createElement('script');
-                element.src = useLocal ? `./${file.name}` : `${baseCDNURL}/${file.name}`;
-                element.onload = () => resolve();
-                element.onerror = () => reject();
+                const element = document.createElement(file.type === 'script' ? 'script' : 'link');
+                if (file.type === 'script') {
+                    element.src = useLocal ? `./${file.name}` : `${baseURL}/${file.name}`;
+                    element.onload = () => resolve();
+                    element.onerror = () => reject();
+                } else {
+                    element.rel = 'stylesheet';
+                    element.href = useLocal ? `./${file.name}` : `${baseURL}/${file.name}`;
+                    element.onload = () => resolve();
+                    element.onerror = () => reject();
+                }
                 document.head.appendChild(element);
             });
         }
@@ -44,7 +51,7 @@
             const cssFile = files.find(f => f.type === 'style');
             const link = document.createElement('link');
             link.rel = 'stylesheet';
-            link.href = useLocal ? `./${cssFile.name}` : `${baseCDNURL}/${cssFile.name}`;
+            link.href = useLocal ? `./${cssFile.name}` : `${baseURL}/${cssFile.name}`;
             document.head.appendChild(link);
 
             // Load scripts in sequence
@@ -64,7 +71,7 @@
         favicon.rel = 'icon';
         favicon.type = 'image/png';
         favicon.sizes = '256x256';
-        favicon.href = useLocal ? './icon.png' : `${baseCDNURL}/icon.png`;
+        favicon.href = useLocal ? './icon.png' : `${baseURL}/icon.png`;
         document.head.appendChild(favicon);
     </script>
 </head>
