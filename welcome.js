@@ -1,3 +1,4 @@
+setSize(700, 700);
 fill(defaultColor);
 noStroke();
 textAlign(CENTER);
@@ -9,10 +10,8 @@ text("Turtle Graphics Studio");
 
 imageMode(CENTER);
 // turtle emoji
-let img = loadImage("./icon.png", () => {
-    scale(1, -1);
-    image(img, 0, -100, 200, 200);
-    scale(1, -1);
+let img = loadImage("https://jorineg.github.io/p5-turtle/icon.png", () => {
+    image(img, 0, 100, 200, 200);
 }); 
 
 stroke(defaultColor);

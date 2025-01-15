@@ -1,6 +1,4 @@
-console.log('theme.js loaded');
 document.addEventListener('scriptsLoaded', () => {
-    console.log('theme.js triggered (after scriptsLoaded event)');
     // Add no-transition class to body immediately
     document.body.classList.add('no-transition');
     const themeToggle = document.getElementById('themeToggle');

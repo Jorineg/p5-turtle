@@ -1,5 +1,3 @@
-console.log("executionLogic.js loaded");
-let commandQueue = [];
 let lastCommandTime = 0;
 let commandDelay = 0; // 0 means instant execution
 let orginalP5Functions = {};
@@ -8,22 +6,90 @@ let defaultColor;
 const maxCommandsHistory = 200;
 let commandHistoryDeletedCount = 0;
 let commandQueueExecutionIndex = 0;
+let numberCodeLinesInjected = 0;
+let canvasWidth;
+let canvasHeight;
+const speedSteps = [0, 0.1, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, Infinity];
 
-// Globale Turtle-Instanz
-let t;
+
+class TurtleArgumentError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = 'TurtleArgumentError';
+    }
+}
+
+const nName = {
+    1: 'erste',
+    2: 'zweite',
+    3: 'dritte',
+    4: 'vierte',
+}
+
+
+function checkNumberArgument(n, arg) {
+    if (typeof arg !== 'number') {
+        let number = Number(arg);
+        if (Number.isNaN(number)) {
+            const error = new TurtleArgumentError(`Das ${nName[n]} Argument muss eine Zahl sein. '${arg}' ist vom Typ ${typeof arg} und konnte nicht in eine Zahl umgewandelt werden.`);
+            throw error;
+        }else{
+            console.warn(`Das ${nName[n]} Argument ist vom Typ ${typeof arg} und wurde automatisch in eine Zahl umgewandelt.`);
+            return number;
+        }
+    } else if (Number.isNaN(arg)) {
+        const error = new TurtleArgumentError(`Das ${nName[n]} Argument ist NaN`);
+        throw error;
+    } else if (arg === Infinity) {
+        const error = new TurtleArgumentError(`Das ${nName[n]} Argument ist Infinity`);
+        throw error;
+    } else if (arg === -Infinity) {
+        const error = new TurtleArgumentError(`Das ${nName[n]} Argument ist -Infinity`);
+        throw error;
+    }   
+    return arg;
+}
+
+function checkStringArgument(n, arg) {
+    if (typeof arg !== 'string') {
+        console.warn(`Das ${nName[n]} Argument ist vom Typ ${typeof arg} und wurde automatisch in einen String umgewandelt.`);
+        return String(arg);
+    }
+    return arg;
+}
+
+function checkArgument(n, type, arg) {
+    if (arg === undefined) {
+        const error = new TurtleArgumentError(`Das ${nName[n]} Argument ist undefined`);
+        throw error;
+    }else if (arg === null) {
+        const error = new TurtleArgumentError(`Das ${nName[n]} Argument ist null`);
+        throw error;
+    }
+    
+    if (type === 'number') {
+        return checkNumberArgument(n, arg);
+    } else if (type === 'string') {
+        return checkStringArgument(n, arg);
+    }
+    return arg;
+}
 
 // Globale Funktionen
 function forward(distance) {
+    distance = checkArgument(1, 'number', distance);
     t._forward(distance);
     commandQueue.push([() => t.forward(distance), [distance]]);
 }
 
 function left(angle) {
+    angle = checkArgument(1, 'number', angle);
     t._left(angle);
     commandQueue.push([() => t.left(angle), [angle]]);
 }
 
 function right(angle) {
+    angle = checkArgument(1, 'number', angle);
     t._right(angle);
     commandQueue.push([() => t.right(angle), [angle]]);
 }
@@ -37,19 +103,36 @@ function penup() {
 }
 
 function goto(x, y) {
+    x = checkArgument(1, 'number', x);
+    y = checkArgument(2, 'number', y);
     t._goto(x, y);
     commandQueue.push([() => t.goto(x, y), [x, y]]);
 }
 
 function color(...args) {
+    if (args.length === 0) {
+        throw new TurtleArgumentError('Das Farbe-Argument ist leer');
+    }
+    // check if any of the arguments is undefined or null
+    if (args.some(arg => arg === undefined || arg === null)) {
+        throw new TurtleArgumentError('Das Farbe-Argument enthält undefined oder null');
+    }
+    
+    // check if string and in simpleColors object
+    // if (args.length === 1 && typeof args[0] === 'string' && simpleColors.hasOwnProperty(args[0])) {
+        // args = [simpleColors[args[0]]];
+    // }
+
     commandQueue.push([() => t.color(...args), args]);
 }
 
 function width(w) {
+    w = checkArgument(1, 'number', w);
     commandQueue.push([() => t.width(w), [w]]);
 }
 
 function angle(a) {
+    a = checkArgument(1, 'number', a);
     commandQueue.push([() => t.angle(a), [a]]);
 }
 
@@ -61,6 +144,11 @@ function showTurtle() {
 function hideTurtle() {
     commandQueue.push([() => t.hideTurtle(), []]);
     // t.hideTurtle();
+}
+
+function randomColor_h(){
+    let [r, g, b] = [Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256)];
+    commandQueue.push([() => t.color(r, g, b), [r, g, b]]);
 }
 
 // Add new global functions
@@ -184,6 +272,24 @@ function _text(text, ...args) {
     orginalP5Functions["pop"].apply(p5.instance);
 }
 
+function _image(image, ...args) {
+    let [x, y] = [t.x, t.y];
+    if (args.length >= 2) {
+        x = args[0];
+        y = args[1];
+        args[0] = 0;
+        args[1] = 0;
+    }
+
+    orginalP5Functions["push"].apply(p5.instance);
+    orginalP5Functions["translate"].apply(p5.instance, [x, y]);
+    orginalP5Functions["scale"].apply(p5.instance, [1, -1]);
+    p5.instance.useOriginal = true;
+    orginalP5Functions["image"].apply(p5.instance, [image, ...args]);
+    p5.instance.useOriginal = false;
+    orginalP5Functions["pop"].apply(p5.instance);
+}
+
 
 function wrapP5Functions(p5Instance) {
     const functionsWithReturn = [
@@ -218,9 +324,10 @@ function wrapP5Functions(p5Instance) {
         "focused", "frameCount", "getFrameRate", "millis"
     ];
 
-    const excludeFunctions = ["redraw", "callRegisteredHooksFor", "color", "resetMatrix", "text"]
+    const excludeFunctions = ["redraw", "callRegisteredHooksFor", "color", "resetMatrix", "text", "image"]
+    const deleteFuntions = ["red", "green", "blue"]
     for (let key in p5Instance) {
-        if (typeof p5Instance[key] === 'function' && !key.startsWith("_") && !excludeFunctions.includes(key) && !functionsWithReturn.includes(key)) {
+        if (typeof p5Instance[key] === 'function' && !key.startsWith("_") && !excludeFunctions.includes(key) && !functionsWithReturn.includes(key) && !deleteFuntions.includes(key)) {
             orginalP5Functions[key] = p5Instance[key];
             p5Instance[key] = function (...args) {
                 if (p5Instance.useOriginal) {
@@ -240,15 +347,26 @@ function wrapP5Functions(p5Instance) {
     orginalP5Functions["text"] = p5Instance["text"];
     p5Instance["text"] = modifiedP5Functions["text"];
 
+    // wrap image separately
+    modifiedP5Functions["image"] = function (...args) {
+        commandQueue.push([() => _image(...args), args, "image"]);
+    }
+    orginalP5Functions["image"] = p5Instance["image"];
+    p5Instance["image"] = modifiedP5Functions["image"];
+
     // wrap resetMatrix separately
     modifiedP5Functions["resetMatrix"] = function (...args) {
         // do nothing...
     }
     orginalP5Functions["resetMatrix"] = p5Instance["resetMatrix"];
     p5Instance["resetMatrix"] = modifiedP5Functions["resetMatrix"];
+
+    for (let name of deleteFuntions) {
+        orginalP5Functions[name] = p5Instance[name];
+        delete p5Instance[name];
+        delete window[name];
+    }
 }
-
-
 
 // Statt einzelner window-Zuweisungen
 const turtleFunctions = {
@@ -266,12 +384,15 @@ const turtleFunctions = {
     showGrid,
     hideGrid,
     getX,
-    getY
+    getY,
+    strangeCircle,
+    strangeLine,
+    strangeGalaxy,
+    strangeSquare,
 };
 
 // Füge die Funktionen zum globalThis-Objekt hinzu
 Object.assign(globalThis, turtleFunctions);
-
 
 // Modify the command execution to set the flag
 function executeCommand(cmd) {
@@ -348,7 +469,9 @@ function setSize(w, h) {
         orginalP5Functions["resizeCanvas"].apply(p5.instance, [w, h]);
         t.canvasWidth = w;
         t.canvasHeight = h;
-        orginalP5Functions["background"].apply(p5.instance, [255]);
+        canvasWidth = w;
+        canvasHeight = h;
+        setInitP5Styles();
 
         // Update UI elements
         document.getElementById('canvasWidth').value = w;
@@ -357,7 +480,6 @@ function setSize(w, h) {
         // Update localStorage
         localStorage.setItem('canvasWidth', w);
         localStorage.setItem('canvasHeight', h);
-        adjustCanvasDisplay();
         t.updateCanvasRect();
     }, [w, h]]);
 }
@@ -382,13 +504,18 @@ function loadTurtleScript() {
     const signal = currentScriptController.signal;
 
     fetch(scriptFileName)
-        .then(response => response.text())
+        .then(response => { if (!response.ok) throw new Error(response.statusText); return response.text(); })
         .then(code => {
             try {
                 // First check for syntax errors
                 new Function(code);
 
                 const script = document.createElement('script');
+                script.id = 'turtleScript';
+
+                // Important! change number depending on line number
+                // start counting lines at 1, not 0
+                numberCodeLinesInjected = 20;
                 script.textContent = `
                     (function() { 
                         try {
@@ -400,22 +527,28 @@ function loadTurtleScript() {
                                         clearInterval(id);
                                         return;
                                     }
-                                    fn(...args);
+                                    try {
+                                        fn(...args);
+                                    } catch (error) {
+                                        console.error(error);
+                                    }
                                 }, delay);
                                 return id;
                             };
-                            // if(draw && (typeof draw === 'function'){
-                            //     setInterval(draw, )
-                            // }
-
-                            ${code}
+// make indentation 0.
+${code}
                         } catch (error) {
-                            const match = error.stack.match(/<anonymous>:([0-9]+):/);
-                            const lineNumber = match ? match[1] - 2 : 'unknown';
-                            console.error(\`Runtime error at line \${lineNumber}: \${error.message}\`);
+                            console.error(error);
                         }
                     })();
+                    //# sourceURL=${scriptFileName}
                 `;
+
+                // Add global error handler for this script context
+                //window.addEventListener('error', function(event) {
+                //    console.error(`Runtime error: ${event.error?.message || event.message}`);
+                //    event.preventDefault();
+                //});
 
                 // Add ability to remove script
                 script.setAttribute('data-turtle-script', 'true');
@@ -431,7 +564,7 @@ function loadTurtleScript() {
 
             } catch (error) {
                 const lineNumber = error.lineNumber || 'unknown';
-                console.error(`Syntax error at line ${lineNumber - 2}: ${error.message}`);
+                console.error(`Syntax error at line ${lineNumber - numberCodeLinesInjected}: ${error.message}`);
             }
         })
         .catch(error => {
@@ -467,31 +600,14 @@ function setInitP5Styles() {
     orginalP5Functions["textFont"].apply(p5.instance, ["Segoe UI", 20]);
 }
 
-function adjustCanvasDisplay() {
-    const canvas = document.querySelector('.p5Canvas');
-
-    if (!canvas) return;
-    const maxDimension = 650;
-
-    // Get the actual canvas dimensions
-    const width = canvas.width;
-    const height = canvas.height;
-
-    // Calculate scale factor
-    const scale = Math.min(1, maxDimension / Math.max(width, height));
-
-    // Apply the scaled dimensions while maintaining aspect ratio
-    canvas.style.width = (width * scale) + 'px';
-    canvas.style.height = (height * scale) + 'px';
-}
-
-
 // p5.js Setup
 function setup() {
+
     let [width, height] = setupSizeControls();
     createCanvas(width, height);
-    adjustCanvasDisplay();
     t = new Turtle(width, height);
+    canvasWidth = width;
+    canvasHeight = height;
 
     setupExportControls();
 
@@ -503,9 +619,9 @@ function setup() {
     }
 
     if (t.visible) {
-        showTurtle();
+        t.showTurtle();
     } else {
-        hideTurtle();
+        t.hideTurtle();
     }
 
     // Add turtle visibility checkbox handler
@@ -554,10 +670,59 @@ function setup() {
     setupSpeedControl();
     lastCommandTime = new Date().getTime();
     wrapP5Functions(p5.instance);
-    wrapConsole();
+    //wrapConsole();
     // setInitP5Styles();
 }
 
+function setupCanvasControls() {
+    const canvas = document.querySelector('#defaultCanvas0'); // p5.js default canvas ID
+    const controls = document.querySelector('.canvas-controls');
+    
+    if (canvas && controls) {
+        let isHovering = false;
+        
+        canvas.addEventListener('mouseenter', () => {
+            isHovering = true;
+            const canvasRect = canvas.getBoundingClientRect();
+            controls.style.top = `${canvasRect.bottom - controls.offsetHeight}px`;
+            controls.style.left = `${canvasRect.right - controls.offsetWidth}px`;
+            controls.style.opacity = '1';
+        });
+        
+        controls.addEventListener('mouseenter', () => {
+            isHovering = true;
+            controls.style.opacity = '1';
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            isHovering = false;
+            setTimeout(() => {
+                if (!isHovering) {
+                    controls.style.opacity = '0';
+                }
+            }, 100);
+        });
+        
+        controls.addEventListener('mouseleave', () => {
+            isHovering = false;
+            setTimeout(() => {
+                if (!isHovering) {
+                    controls.style.opacity = '0';
+                }
+            }, 100);
+        });
+    }
+}
+
+// Call setupCanvasControls after p5.js setup is complete
+document.addEventListener('scriptsLoaded', () => {
+    const checkCanvas = setInterval(() => {
+        if (document.querySelector('#defaultCanvas0')) {
+            setupCanvasControls();
+            clearInterval(checkCanvas);
+        }
+    }, 100);
+});
 
 // Optional: Draw-Funktion, wenn Animation gewünscht ist
 function draw() {
@@ -613,70 +778,76 @@ function initializeTurtleExecution() {
 }
 
 function setupExportControls() {
-    document.getElementById('copyCanvas').onclick = async () => {
+    // Copy canvas button
+    document.getElementById('copyDrawing').onclick = async () => {
         try {
-            const canvas = document.querySelector('canvas');
-
-            // Convert canvas to blob
-            const blob = await new Promise(resolve => {
-                canvas.toBlob(resolve, 'image/png');
-            });
-
-            // Create ClipboardItem
-            const item = new ClipboardItem({ 'image/png': blob });
-
-            // Copy to clipboard
+            // Get the canvas element
+            const canvas = document.querySelector('.p5Canvas');
+            
+            // Convert the canvas to a blob
+            const blob = await new Promise(resolve => canvas.toBlob(resolve));
+            
+            // Create a ClipboardItem
+            const item = new ClipboardItem({ "image/png": blob });
+            
+            // Write to clipboard
             await navigator.clipboard.write([item]);
-
-            // Show success feedback
-            const button = document.getElementById('copyCanvas');
-            const originalText = button.textContent;
-            button.textContent = 'Copied!';
-            setTimeout(() => {
-                button.textContent = originalText;
-            }, 2000);
+            
+            console.log('Canvas copied to clipboard!');
         } catch (err) {
-            console.error('Failed to copy:', err);
-            // Show error feedback
-            const button = document.getElementById('copyCanvas');
-            const originalText = button.textContent;
-            button.textContent = 'Copy failed';
-            setTimeout(() => {
-                button.textContent = originalText;
-            }, 2000);
+            console.error('Failed to copy canvas:', err);
         }
     };
 
-    document.getElementById('downloadCanvas').onclick = () => {
-        const dataUrl = document.querySelector('canvas').toDataURL();
+    // Download canvas button
+    document.getElementById('downloadDrawing').onclick = () => {
+        // Get the canvas element
+        const canvas = document.querySelector('.p5Canvas');
+        
+        // Create a temporary link element
         const link = document.createElement('a');
         link.download = 'turtle-drawing.png';
-        link.href = dataUrl;
+        link.href = canvas.toDataURL("image/png");
+        
+        // Trigger download
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
     };
 }
 
 function setupSizeControls() {
-    // Load saved size from localStorage or use defaults
     const savedWidth = localStorage.getItem('canvasWidth') || 700;
     const savedHeight = localStorage.getItem('canvasHeight') || 700;
 
+    const widthInput = document.getElementById('canvasWidth');
+    const heightInput = document.getElementById('canvasHeight');
+
     // Set initial input values
-    document.getElementById('canvasWidth').value = savedWidth;
-    document.getElementById('canvasHeight').value = savedHeight;
+    widthInput.value = savedWidth;
+    heightInput.value = savedHeight;
 
-    // Handle apply button click
-    document.getElementById('applySize').onclick = () => {
-        const width = parseInt(document.getElementById('canvasWidth').value);
-        const height = parseInt(document.getElementById('canvasHeight').value);
+    // Add tooltips
+    widthInput.title = 'Canvas Width';
+    heightInput.title = 'Canvas Height';
 
-        // Save to localStorage
-        localStorage.setItem('canvasWidth', width);
-        localStorage.setItem('canvasHeight', height);
+    // Handle enter key press
+    const handleEnterKey = (e) => {
+        if (e.key === 'Enter') {
+            const width = parseInt(widthInput.value);
+            const height = parseInt(heightInput.value);
 
-        // Reload the page to restart with new size
-        location.reload();
+            // Save to localStorage
+            localStorage.setItem('canvasWidth', width);
+            localStorage.setItem('canvasHeight', height);
+
+            // Reload the page to restart with new size
+            location.reload();
+        }
     };
+
+    widthInput.addEventListener('keypress', handleEnterKey);
+    heightInput.addEventListener('keypress', handleEnterKey);
 
     // Handle reset button click
     document.getElementById('resetSize').onclick = () => {
@@ -686,6 +857,7 @@ function setupSizeControls() {
 
         location.reload();
     };
+
     return [parseInt(savedWidth), parseInt(savedHeight)];
 }
 
@@ -785,9 +957,55 @@ function setupSpeedControl() {
     });
 }
 
-function updateSpeedLabel(delay) {
-    const speedSteps = [0, 0.1, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, Infinity];
+// turtle funtions
+function setSpeed(speed){
+    const nextCommandButton = document.getElementById('nextCommand');
+    const speedSlider = document.getElementById('speedSlider');
 
+    // Update slider position
+    
+    if (commandDelay === Infinity) {
+        lastCommandTime = new Date().getTime();
+    }
+    
+    // find closest value in speedSteps
+    let closestIndex = 0;
+    let closestValue = Infinity;
+    for (let i = 0; i < speedSteps.length; i++) {
+        const value = speedSteps[i];
+        if (Math.abs(value - speed) < closestValue) {
+            closestValue = Math.abs(value - speed);
+            closestIndex = i;
+        }
+    }
+
+    speedSlider.value = closestIndex;
+
+    if(speed != speedSteps[closestIndex]){
+        console.warn(`Warning: ${speed} is not a valid option for 'setSpeed'. Using closest value: ${speedSteps[closestIndex]}`);
+    }
+    
+    commandDelay = updateSpeedLabel(closestIndex);
+    nextCommandButton.disabled = commandDelay !== Infinity;
+}
+
+
+function redrawOnMove(...args){
+    // do nothing. for compatibility only...
+}
+
+// for compatibility
+colour = color;
+
+function degToRad(deg) {
+    return deg * (Math.PI / 180);
+}
+
+function radToDeg(rad) {
+    return rad * (180 / Math.PI);
+}
+
+function updateSpeedLabel(delay) {
     const index = parseInt(delay);
     const value = speedSteps[index];
 
@@ -800,93 +1018,4 @@ function updateSpeedLabel(delay) {
         speedValue.textContent = value + 'ms';
     }
     return value;
-}
-
-// Add this at the beginning of the file
-const originalConsole = {
-    log: console.log,
-    error: console.error,
-    warn: console.warn,
-    info: console.info,
-    debug: console.debug
-};
-
-function resetConsoleDisplay() {
-    const consoleDisplay = document.getElementById('consoleDisplay');
-    if (consoleDisplay) {
-        consoleDisplay.innerHTML = '';
-    }
-}
-
-function createConsoleDisplay() {
-    const consoleDisplay = document.createElement('div');
-    consoleDisplay.id = 'consoleDisplay';
-    consoleDisplay.className = 'console-display';
-
-    // Find the right panel content div
-    const rightPanelContent = document.querySelector('.side-panel-right .panel-content');
-    rightPanelContent.appendChild(consoleDisplay);
-
-    return consoleDisplay;
-}
-
-function formatConsoleMessage(type, ...args) {
-    const timestamp = new Date().toLocaleTimeString();
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `console-message console-${type}`;
-
-    const timestampSpan = document.createElement('span');
-    timestampSpan.className = 'console-timestamp';
-    timestampSpan.textContent = `[${timestamp}] `;
-
-    const messageContent = document.createElement('span');
-    messageContent.className = 'console-content';
-    messageContent.textContent = args.map(arg =>
-        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-    ).join(' ');
-
-    messageDiv.appendChild(timestampSpan);
-    messageDiv.appendChild(messageContent);
-    return messageDiv;
-}
-
-function wrapConsole() {
-    const consoleDisplay = createConsoleDisplay();
-
-    function appendMessage(type, ...args) {
-        const messageElement = formatConsoleMessage(type, ...args);
-        consoleDisplay.appendChild(messageElement);
-        consoleDisplay.scrollTop = consoleDisplay.scrollHeight;
-
-        // Limit the number of messages (keep last 100)
-        while (consoleDisplay.children.length > 200) {
-            consoleDisplay.removeChild(consoleDisplay.firstChild);
-        }
-    }
-
-    // Wrap each console method
-    console.log = (...args) => {
-        originalConsole.log.apply(console, args);
-        appendMessage('log', ...args);
-    };
-
-    console.error = (...args) => {
-        originalConsole.error.apply(console, args);
-        appendMessage('error', ...args);
-    };
-
-    console.warn = (...args) => {
-        originalConsole.warn.apply(console, args);
-        appendMessage('warn', ...args);
-    };
-
-    console.info = (...args) => {
-        originalConsole.info.apply(console, args);
-        appendMessage('info', ...args);
-    };
-
-    console.debug = (...args) => {
-        originalConsole.debug.apply(console, args);
-        appendMessage('debug', ...args);
-    };
 }

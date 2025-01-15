@@ -5,24 +5,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JS Turtle</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.3/p5.min.js"
-        integrity="sha512-0zGLOFv/+OQ6YfVCSGDQWhrDRx0ONmBqWvs3gI4olm8i6xtKoG1FhEnB4eTaWCVnojyfUDgE8Izeln+mAJAkFA=="
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.9.2/lib/p5.min.js"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
         const params = new URLSearchParams(window.location.search);
         const useLocal = params.get('dev') === 'true';
 
         console.log('dev mode:', useLocal);
-
-        // Add timestamp to bust cache
-        const timestamp = Date.now();
-        // Use raw.githack.com for development CDN (no caching)
-        const baseURL = useLocal ? '' : `https://raw.githack.com/Jorineg/p5-turtle/master`;
+        const baseURL = useLocal ? '' : `https://jorineg.github.io/p5-turtle`;
 
         const files = [
+            { name: 'wrapConsole.js', type: 'script' },
             { name: 'theme.js', type: 'script' },
             { name: 'scriptSelector.js', type: 'script' },
             { name: 'turtle.js', type: 'script' },
+            // { name: 'colors.js', type: 'script'},
+            { name: 'strangeFunctions.js', type: 'script' },
             { name: 'executionLogic.js', type: 'script' },
             { name: 'styles.css', type: 'style' }
         ];
@@ -30,10 +28,9 @@
         // Load a single script and return a promise
         function loadScript(file) {
             return new Promise((resolve, reject) => {
-                console.log('loading', file.name);
                 const element = document.createElement(file.type === 'script' ? 'script' : 'link');
-                const url = useLocal ? `./${file.name}` : `${baseURL}/${file.name}?v=${timestamp}`;
-                
+                const url = useLocal ? `./${file.name}` : `${baseURL}/${file.name}`;
+
                 if (file.type === 'script') {
                     element.src = url;
                     element.onload = () => resolve();
@@ -54,7 +51,7 @@
             const cssFile = files.find(f => f.type === 'style');
             const link = document.createElement('link');
             link.rel = 'stylesheet';
-            link.href = useLocal ? `./${cssFile.name}` : `${baseURL}/${cssFile.name}?v=${timestamp}`;
+            link.href = useLocal ? `./${cssFile.name}` : `${baseURL}/${cssFile.name}`;
             document.head.appendChild(link);
 
             // Load scripts in sequence
@@ -74,7 +71,7 @@
         favicon.rel = 'icon';
         favicon.type = 'image/png';
         favicon.sizes = '256x256';
-        favicon.href = useLocal ? './icon.png' : `${baseURL}/icon.png?v=${timestamp}`;
+        favicon.href = useLocal ? './icon.png' : `${baseURL}/icon.png`;
         document.head.appendChild(favicon);
     </script>
 </head>
@@ -95,7 +92,9 @@
                     <option value="" disabled>Select...</option>
                     <!-- Options will be populated by JavaScript -->
                 </select>
-                <input type="text" id="scriptNameInput" placeholder="Other script">
+                <div class="show-press-enter-message">
+                    <input type="text" id="scriptNameInput" placeholder="Other script">
+                </div>
             </div>
         </div>
         <div class="panel-content">
@@ -105,7 +104,9 @@
             </div>
         </div>
         <div class="control-group">
-            <input type="text" id="manualCommand" placeholder="Enter a command">
+            <div class="show-press-enter-message">
+                <input type="text" id="manualCommand" placeholder="Enter a command">
+            </div>
             <label for="speedSlider" style="display: flex; justify-content: space-between; width: 100%;">
                 <span>Execution Delay:</span>
                 <span id="speedValue"></span>
@@ -168,47 +169,45 @@
         </div>
 
         <div class="bottom-controls">
-            <div class="control-group">
-                <label for="canvasWidth">Canvas Width</label>
+            <label>Canvas Size:</label>
+            <div style="display: flex; gap: 10px;">
+                <div class="show-press-enter-message">
                 <input type="number" id="canvasWidth" value="700" min="100" max="2000">
-            </div>
-            <div class="control-group">
-                <label for="canvasHeight">Canvas Height</label>
+                </div>
+                <label>x</label>
+                <div class="show-press-enter-message">
                 <input type="number" id="canvasHeight" value="700" min="100" max="2000">
+                </div>
             </div>
-            <div class="control-group">
-                <button id="applySize">Apply Size</button>
-                <button id="resetSize">Reset Size</button>
-            </div>
-            <div class="checkbox-group">
-                <label>
-                    <input type="checkbox" id="showTurtle" checked>
-                    Show Turtle
-                </label>
-                <label>
-                    <input type="checkbox" id="showGrid">
-                    Show Grid
-                </label>
-            </div>
-            <div class="control-group">
-                <button id="copyCanvas">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                    </svg>
-                    Copy Drawing
-                </button>
-                <button id="downloadCanvas">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    Download Drawing
-                </button>
-            </div>
+            <button id="resetSize">Reset Size</button>
+            <label>
+                <input type="checkbox" id="showTurtle" checked>
+                Show Turtle
+            </label>
+            <label>
+                <input type="checkbox" id="showGrid">
+                Show Grid
+            </label>
+        </div>
+
+        <div class="canvas-controls">
+            <button id="copyDrawing">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                Copy Drawing
+            </button>
+            <button id="downloadDrawing">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Download Drawing
+            </button>
         </div>
     </main>
 </body>

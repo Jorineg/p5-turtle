@@ -1,5 +1,3 @@
-console.log('turtle.js loaded');
-
 class Turtle {
     constructor(w, h) {
         this.canvasWidth = w;

@@ -1,4 +1,3 @@
-console.log('scriptSelector.js loaded');
 class ScriptSelector {
     constructor() {
         this.input = document.getElementById('scriptNameInput');

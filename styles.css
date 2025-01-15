@@ -85,7 +85,7 @@ html {
     flex-direction: column;
     gap: 20px;
     overflow: hidden;
-    max-height: calc(100vh - 73px);
+    height: calc(100vh - 40px);
     transition: transform 0.3s ease;
     position: relative;
     width: var(--panel-width);
@@ -135,7 +135,7 @@ body:has(.side-panel-right.collapsed) #canvasContainer {
 
 .p5Canvas {
     max-width: 100% !important;
-    max-height: 650px !important;
+    max-height: calc(100vh - 140px) !important;
     width: auto !important;
     height: auto !important;
     aspect-ratio: attr(width) / attr(height);
@@ -154,6 +154,43 @@ body:has(.side-panel-right.collapsed) #canvasContainer {
     display: flex;
     flex-direction: column;
     gap: 10px;
+}
+
+.canvas-controls {
+    position: fixed;
+    opacity: 0;
+    display: flex;
+    background: none;
+    border-radius: 0px 0px 0 0;
+    z-index: 1000;
+    transition: opacity 0.2s ease;
+}
+
+.canvas-controls button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--background-color);
+    cursor: pointer;
+    transition: all 0.2s;
+    width: auto;
+}
+
+.canvas-controls button:first-child {
+    border-radius: 10px 0px 0 0;
+}
+
+.canvas-controls button:last-child {
+    border-radius: 0px 0px 10px 0;
+}
+
+.canvas-controls button:hover {
+    background: #f0f0f0;
+}
+
+.canvas-controls svg {
+    width: 16px;
+    height: 16px;
 }
 
 .horizontal {
@@ -223,16 +260,57 @@ button:hover:not(:disabled) {
     gap: 20px;
     justify-content: center;
     background-color: var(--tertiary-color);
-    padding: 20px;
+    padding: 0;
     border-radius: 10px;
     width: 100%;
     box-sizing: border-box;
     margin-top: auto;
+    margin-top: 0px;
+}
+
+
+.bottom-controls button {
+    width: auto;
+}
+
+.bottom-controls input {
+    display: inline-block;
+    -moz-appearance: textfield;
+    -webkit-appearance: textfield;
+    appearance: textfield;
+    max-width: 50px;
+}
+
+.bottom-controls label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
 
 .bottom-controls .control-group {
     flex: 0 1 auto;
+}
+
+.show-press-enter-message {
+    position: relative;
+    display: flex;
+}
+
+.show-press-enter-message:has(input:focus)::after {
+    content: "Press Enter to apply";
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--secondary-color);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 1000;
 }
 
 .code-display {
@@ -255,7 +333,7 @@ button:hover:not(:disabled) {
 
 .checkbox-group {
     display: flex;;
-    flex-direction: column;
+    flex-direction: row;
     gap: 5px;
     height: 100%;
 }
@@ -418,6 +496,7 @@ select {
 input {
     flex: 1;
     min-width: 0px;
+    position: relative;
 }
 
 select:focus,
