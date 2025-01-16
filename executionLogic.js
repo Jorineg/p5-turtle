@@ -1,6 +1,6 @@
 let lastCommandTime = 0;
 let commandDelay = 0; // 0 means instant execution
-let orginalP5Functions = {};
+let originalP5Functions = {};
 let modifiedP5Functions = {};
 let defaultColor;
 const maxCommandsHistory = 200;
@@ -254,6 +254,30 @@ function getX() {
 function getY() {
     return t._y;
 }
+// use like drawEmoji("1F929",50); 
+function drawEmoji(unicode, size=20){
+    commandQueue.push([() => {
+        let [x, y] = [t.x, t.y];
+        let currentTextSize = originalP5Functions["textSize"].apply(p5.instance);   
+        originalP5Functions["textSize"].apply(p5.instance, [size]);
+        // convert hex string to number
+        let unicodeNumber = parseInt(unicode, 16);
+        let currentTextAlign = originalP5Functions["textAlign"].apply(p5.instance);
+        const translateY = -size/2.85;
+        originalP5Functions["translate"].apply(p5.instance, [0, translateY]);
+        originalP5Functions["textAlign"].apply(p5.instance, [CENTER]);
+        let text;
+        try {
+            text = String.fromCodePoint(unicodeNumber);
+        } catch (error) {
+            text = unicode;
+        }
+        _text(text, x, y);
+        originalP5Functions["textAlign"].apply(p5.instance, [currentTextAlign["horizontal"], currentTextAlign["vertical"]]);
+        originalP5Functions["translate"].apply(p5.instance, [0, -translateY]);
+        originalP5Functions["textSize"].apply(p5.instance, [currentTextSize]);
+    }, [unicode, size], "drawEmoji"]);
+}
 
 // save translation and scale, scale to flip y axis
 // restore translation and scale
@@ -263,13 +287,13 @@ function _text(text, ...args) {
         x = args[0];
         y = args[1];
     }
-    orginalP5Functions["push"].apply(p5.instance);
-    orginalP5Functions["translate"].apply(p5.instance, [x, y]);
-    orginalP5Functions["scale"].apply(p5.instance, [1, -1]);
+    originalP5Functions["push"].apply(p5.instance);
+    originalP5Functions["translate"].apply(p5.instance, [x, y]);
+    originalP5Functions["scale"].apply(p5.instance, [1, -1]);
     p5.instance.useOriginal = true;
-    orginalP5Functions["text"].apply(p5.instance, [text, 0, 0]);
+    originalP5Functions["text"].apply(p5.instance, [text, 0, 0]);
     p5.instance.useOriginal = false;
-    orginalP5Functions["pop"].apply(p5.instance);
+    originalP5Functions["pop"].apply(p5.instance);
 }
 
 function _image(image, ...args) {
@@ -281,13 +305,35 @@ function _image(image, ...args) {
         args[1] = 0;
     }
 
-    orginalP5Functions["push"].apply(p5.instance);
-    orginalP5Functions["translate"].apply(p5.instance, [x, y]);
-    orginalP5Functions["scale"].apply(p5.instance, [1, -1]);
+    originalP5Functions["push"].apply(p5.instance);
+    originalP5Functions["translate"].apply(p5.instance, [x, y]);
+    originalP5Functions["scale"].apply(p5.instance, [1, -1]);
     p5.instance.useOriginal = true;
-    orginalP5Functions["image"].apply(p5.instance, [image, ...args]);
+    originalP5Functions["image"].apply(p5.instance, [image, ...args]);
     p5.instance.useOriginal = false;
-    orginalP5Functions["pop"].apply(p5.instance);
+    originalP5Functions["pop"].apply(p5.instance);
+}
+
+// if only one argument is given, use turtle postion as center
+function _circle(...args) {
+    if (args.length === 1) {
+        args.unshift(t.x, t.y);
+    }
+    originalP5Functions["circle"].apply(p5.instance, args);
+}
+
+function _ellipse(...args) {
+    if (args.length <= 2) {
+        args.unshift(t.x, t.y);
+    }
+    originalP5Functions["ellipse"].apply(p5.instance, args);
+}
+
+function _rect(...args) {
+    if (args.length <= 2) {
+        args.unshift(t.x, t.y);
+    }
+    originalP5Functions["rect"].apply(p5.instance, args);
 }
 
 
@@ -324,16 +370,16 @@ function wrapP5Functions(p5Instance) {
         "focused", "frameCount", "getFrameRate", "millis"
     ];
 
-    const excludeFunctions = ["redraw", "callRegisteredHooksFor", "color", "resetMatrix", "text", "image"]
+    const excludeFunctions = ["redraw", "callRegisteredHooksFor", "color", "resetMatrix", "text", "image", "circle"]
     const deleteFuntions = ["red", "green", "blue"]
     for (let key in p5Instance) {
         if (typeof p5Instance[key] === 'function' && !key.startsWith("_") && !excludeFunctions.includes(key) && !functionsWithReturn.includes(key) && !deleteFuntions.includes(key)) {
-            orginalP5Functions[key] = p5Instance[key];
+            originalP5Functions[key] = p5Instance[key];
             p5Instance[key] = function (...args) {
                 if (p5Instance.useOriginal) {
-                    orginalP5Functions[key].apply(p5Instance, args);
+                    originalP5Functions[key].apply(p5Instance, args);
                 } else {
-                    commandQueue.push([() => orginalP5Functions[key].apply(p5Instance, args), args, key]);
+                    commandQueue.push([() => originalP5Functions[key].apply(p5Instance, args), args, key]);
                 }
             };
             modifiedP5Functions[key] = p5Instance[key];
@@ -344,25 +390,32 @@ function wrapP5Functions(p5Instance) {
     modifiedP5Functions["text"] = function (...args) {
         commandQueue.push([() => _text(...args), args, "text"]);
     }
-    orginalP5Functions["text"] = p5Instance["text"];
+    originalP5Functions["text"] = p5Instance["text"];
     p5Instance["text"] = modifiedP5Functions["text"];
 
     // wrap image separately
     modifiedP5Functions["image"] = function (...args) {
         commandQueue.push([() => _image(...args), args, "image"]);
     }
-    orginalP5Functions["image"] = p5Instance["image"];
+    originalP5Functions["image"] = p5Instance["image"];
     p5Instance["image"] = modifiedP5Functions["image"];
 
     // wrap resetMatrix separately
     modifiedP5Functions["resetMatrix"] = function (...args) {
         // do nothing...
     }
-    orginalP5Functions["resetMatrix"] = p5Instance["resetMatrix"];
+    originalP5Functions["resetMatrix"] = p5Instance["resetMatrix"];
     p5Instance["resetMatrix"] = modifiedP5Functions["resetMatrix"];
 
+    // wrap circle separately
+    modifiedP5Functions["circle"] = function (...args) {
+        commandQueue.push([() => _circle(...args), args, "circle"]);
+    }
+    originalP5Functions["circle"] = p5Instance["circle"];
+    p5Instance["circle"] = modifiedP5Functions["circle"];
+
     for (let name of deleteFuntions) {
-        orginalP5Functions[name] = p5Instance[name];
+        originalP5Functions[name] = p5Instance[name];
         delete p5Instance[name];
         delete window[name];
     }
@@ -408,6 +461,9 @@ function getCommandString(cmd) {
     for (let i = 0; i < cmd[1].length; i++) {
         if (typeof cmd[1][i] === 'string') {
             args.push(`"${cmd[1][i]}"`);
+        } else if (typeof cmd[1][i] === 'number' && !Number.isInteger(cmd[1][i])) {
+            // round number to 2 decimals
+            args.push(cmd[1][i].toFixed(2));
         } else {
             args.push(cmd[1][i]);
         }
@@ -466,12 +522,14 @@ function setSize(w, h) {
         if (t.drawingStarted) {
             console.warn('Warning: setSize() clears the canvas. For best results, call setSize() before any drawing commands.');
         }
-        orginalP5Functions["resizeCanvas"].apply(p5.instance, [w, h]);
+        originalP5Functions["resizeCanvas"].apply(p5.instance, [w, h]);
         t.canvasWidth = w;
         t.canvasHeight = h;
         canvasWidth = w;
         canvasHeight = h;
         setInitP5Styles();
+
+        updateVisibleCanvasSize();
 
         // Update UI elements
         document.getElementById('canvasWidth').value = w;
@@ -585,19 +643,19 @@ function stopTurtleScript() {
 
 function setInitP5Styles() {
     defaultColor = getComputedStyle(document.documentElement).getPropertyValue('--text-color');
-    orginalP5Functions["stroke"].apply(p5.instance, [defaultColor]);
-    orginalP5Functions["strokeCap"].apply(p5.instance, [SQUARE]);
-    orginalP5Functions["noFill"].apply(p5.instance);
-    orginalP5Functions["clear"].apply(p5.instance);
-    orginalP5Functions["frameRate"].apply(p5.instance, [120]);
-    orginalP5Functions["strokeWeight"].apply(p5.instance, [1]);
+    originalP5Functions["stroke"].apply(p5.instance, [defaultColor]);
+    originalP5Functions["strokeCap"].apply(p5.instance, [SQUARE]);
+    originalP5Functions["noFill"].apply(p5.instance);
+    originalP5Functions["clear"].apply(p5.instance);
+    originalP5Functions["frameRate"].apply(p5.instance, [120]);
+    originalP5Functions["strokeWeight"].apply(p5.instance, [1]);
     // resetMatrix(); // function not wrapped
-    orginalP5Functions["resetMatrix"].apply(p5.instance);
-    orginalP5Functions["translate"].apply(p5.instance, [t.canvasWidth / 2, t.canvasHeight / 2]);
-    orginalP5Functions["scale"].apply(p5.instance, [1, -1]);
+    originalP5Functions["resetMatrix"].apply(p5.instance);
+    originalP5Functions["translate"].apply(p5.instance, [t.canvasWidth / 2, t.canvasHeight / 2]);
+    originalP5Functions["scale"].apply(p5.instance, [1, -1]);
     // translation and scaling is applied in draw for every iteration. Not anymore...
     // text size and font
-    orginalP5Functions["textFont"].apply(p5.instance, ["Segoe UI", 20]);
+    originalP5Functions["textFont"].apply(p5.instance, ["Segoe UI", 20]);
 }
 
 // p5.js Setup
@@ -608,6 +666,7 @@ function setup() {
     t = new Turtle(width, height);
     canvasWidth = width;
     canvasHeight = height;
+    updateVisibleCanvasSize();
 
     setupExportControls();
 
@@ -736,8 +795,8 @@ function draw() {
     Object.assign(globalThis, modifiedP5Functions);
 
     const currentTime = new Date().getTime();
-    // orginalP5Functions["translate"].apply(p5.instance, [t.canvasWidth / 2, t.canvasHeight / 2]);
-    // orginalP5Functions["scale"].apply(p5.instance, [1, -1]);
+    // originalP5Functions["translate"].apply(p5.instance, [t.canvasWidth / 2, t.canvasHeight / 2]);
+    // originalP5Functions["scale"].apply(p5.instance, [1, -1]);
 
     while (commandQueue.length > commandQueueExecutionIndex &&
         (commandDelay === 0 || currentTime - lastCommandTime >= commandDelay)) {
@@ -755,8 +814,8 @@ function draw() {
     }
 
     // translate back
-    // orginalP5Functions["scale"].apply(p5.instance, [1, -1]);
-    // orginalP5Functions["translate"].apply(p5.instance, [-t.canvasWidth / 2, -t.canvasHeight / 2]);
+    // originalP5Functions["scale"].apply(p5.instance, [1, -1]);
+    // originalP5Functions["translate"].apply(p5.instance, [-t.canvasWidth / 2, -t.canvasHeight / 2]);
 
 
     updateCommandDisplay();
@@ -861,12 +920,65 @@ function setupSizeControls() {
     return [parseInt(savedWidth), parseInt(savedHeight)];
 }
 
+// always keep aspect ratio of visible canvas same as internal canvas dimensions
+// set canvas height max viewport height
+// except this would result in a width that is greater than what is available
+// in that case set canvas width to max available width and height so that aspect ratio is kept 
+function updateVisibleCanvasSize() {
+    const canvas = document.getElementById('defaultCanvas0');
+    const canvasContainer = document.getElementById('canvasContainer');
+    const bottomControls = document.querySelector('.bottom-controls');
+    
+    // Get the actual dimensions including padding and borders
+    const containerRect = canvasContainer.getBoundingClientRect();
+    const bottomControlsRect = bottomControls.getBoundingClientRect();
+    
+    // Get computed styles to account for margins
+    const containerStyle = window.getComputedStyle(canvasContainer);
+    const bottomControlsStyle = window.getComputedStyle(bottomControls);
+    const canvasStyle = window.getComputedStyle(canvas);
+    
+    // Calculate available space accounting for padding and margins
+    const availableWidth = containerRect.width - 
+        parseFloat(containerStyle.paddingLeft) - 
+        parseFloat(containerStyle.paddingRight);
+    
+    const availableHeight = containerRect.height - 
+        bottomControlsRect.height -
+        parseFloat(containerStyle.paddingTop) - 
+        parseFloat(containerStyle.paddingBottom) -
+        parseFloat(bottomControlsStyle.marginTop) -
+        parseFloat(bottomControlsStyle.marginBottom) -
+        parseFloat(canvasStyle.marginTop) -
+        parseFloat(canvasStyle.marginBottom)-
+        4; // 2px for border, 2px for idk...
+
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    const aspectRatio = canvasWidth / canvasHeight;
+    let newWidth = availableWidth;
+    let newHeight = newWidth / aspectRatio;
+    if (newHeight > availableHeight) {
+        newHeight = availableHeight;
+        newWidth = newHeight * aspectRatio;
+    }
+    canvas.style.width = `${newWidth}px`;
+    canvas.style.height = `${newHeight}px`;
+}
+
+
 function setupResizeObserver() {
     const canvasContainer = document.getElementById('canvasContainer');
+    const canvas = document.querySelector('canvas');
+    const controls = document.querySelector('.canvas-controls');
     t.resizeObserver = new ResizeObserver(() => {
+        updateVisibleCanvasSize();
         t.updateCanvasRect();
         t.updateTurtleVisual();
         updateGrid();
+        const canvasRect = canvas.getBoundingClientRect();
+        controls.style.top = `${canvasRect.bottom - controls.offsetHeight}px`;
+        controls.style.left = `${canvasRect.right - controls.offsetWidth}px`;
     });
     t.resizeObserver.observe(canvasContainer);
 }

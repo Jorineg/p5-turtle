@@ -71,11 +71,11 @@ class Turtle {
             let newX = this.x + Math.sin(this.positionAngle * PI / 180) * distance;
             let newY = this.y + Math.cos(this.positionAngle * PI / 180) * distance;
 
-            // orginalP5Functions["line"].apply(p5.instance, [this.canvasWidth / 2 + this.x, this.canvasHeight / 2 - this.y,
+            // originalP5Functions["line"].apply(p5.instance, [this.canvasWidth / 2 + this.x, this.canvasHeight / 2 - this.y,
             // this.canvasWidth / 2 + newX, this.canvasHeight / 2 - newY]);
 
             // assume p5 coordinates are in the center of the canvas
-            orginalP5Functions["line"].apply(p5.instance, [this.x, this.y, newX, newY]);
+            originalP5Functions["line"].apply(p5.instance, [this.x, this.y, newX, newY]);
             this.x = newX;
             this.y = newY;
         } else {
@@ -124,12 +124,12 @@ class Turtle {
             // Für einzelnen Grauwert
             this.currentColor = [color, color, color];
         }
-        orginalP5Functions["stroke"].apply(p5.instance, [this.currentColor]);
+        originalP5Functions["stroke"].apply(p5.instance, [this.currentColor]);
     }
 
     width(width) {
         this.currentWidth = width;
-        orginalP5Functions["strokeWeight"].apply(p5.instance, [this.currentWidth]);
+        originalP5Functions["strokeWeight"].apply(p5.instance, [this.currentWidth]);
     }
 
     angle(angle) {

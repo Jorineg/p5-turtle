@@ -4,7 +4,7 @@
     --accent-color: #4a90e2;
     --secondary-color: #5a6f8c;
     --tertiary-color: #3c4858;
-    --panel-width: 320px;
+    --panel-width: max(260px, calc(100vw/5));
 }
 
 [data-theme="light"] {
@@ -130,15 +130,14 @@ html {
 }
 
 body:has(.side-panel-right.collapsed) #canvasContainer {
-    padding-right: 40px;
+    width: calc(100% - 20px);
 }
 
 .p5Canvas {
     max-width: 100% !important;
     max-height: calc(100vh - 140px) !important;
-    width: auto !important;
-    height: auto !important;
-    aspect-ratio: attr(width) / attr(height);
+    /*width: auto !important;
+    height: auto !important;*/
     object-fit: contain;
     position: relative;
     margin-bottom: 20px;
@@ -294,7 +293,11 @@ button:hover:not(:disabled) {
 
 .show-press-enter-message {
     position: relative;
-    display: flex;
+    flex: 0 1 auto;  /* don't grow, can shrink, auto basis */
+}
+
+.show-press-enter-message input {
+    width: calc(100% - 26px);
 }
 
 .show-press-enter-message:has(input:focus)::after {
@@ -482,6 +485,13 @@ select, input {
     font-size: 14px;
 }
 
+input {
+    flex: 1;
+    min-width: 0px;
+    position: relative;
+}
+
+
 select {
     flex: 1;
     min-width: 120px;
@@ -491,12 +501,6 @@ select {
     background-position: right 12px center;
     padding-right: 36px;
     cursor: pointer;
-}
-
-input {
-    flex: 1;
-    min-width: 0px;
-    position: relative;
 }
 
 select:focus,
