@@ -468,10 +468,11 @@ function getCommandString(cmd) {
             args.push(cmd[1][i]);
         }
     }
-    if (match) {
-        return `${match[1]}(${args.join(', ')})`;
-    } else if (cmd[2]) {
+    
+    if (cmd[2]) {
         return `${cmd[2]}(${args.join(', ')})`;
+    }else if (match) {
+        return `${match[1]}(${args.join(', ')})`;
     }
     return "Unknown Command";
 }
