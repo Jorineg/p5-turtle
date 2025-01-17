@@ -10,6 +10,7 @@ let numberCodeLinesInjected = 0;
 let canvasWidth;
 let canvasHeight;
 const speedSteps = [0, 0.1, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, Infinity];
+let selectedExecutionScriptContent;
 
 
 class TurtleArgumentError extends Error {
@@ -173,7 +174,7 @@ function drawGrid(size = 50) {
     gridCanvas.style.zIndex = '1';
 
     // Insert after the p5 canvas
-    const p5Canvas = document.querySelector('canvas');
+    const p5Canvas = document.getElementById('defaultCanvas0');
     p5Canvas.parentNode.insertBefore(gridCanvas, p5Canvas.nextSibling);
     gridCanvas.style.left = p5Canvas.offsetLeft + 'px';
     gridCanvas.style.top = p5Canvas.offsetTop + 'px';
@@ -626,6 +627,7 @@ ${code}
                     window.setInterval = originalSetInterval;
                 });
 
+                selectedExecutionScriptContent = code;
             } catch (error) {
                 const lineNumber = error.lineNumber || 'unknown';
                 console.error(`Syntax error at line ${lineNumber - numberCodeLinesInjected}: ${error.message}`);
@@ -975,7 +977,7 @@ function updateVisibleCanvasSize() {
 
 function setupResizeObserver() {
     const canvasContainer = document.getElementById('canvasContainer');
-    const canvas = document.querySelector('canvas');
+    const canvas = document.getElementById('defaultCanvas0');
     const controls = document.querySelector('.canvas-controls');
     t.resizeObserver = new ResizeObserver(() => {
         updateVisibleCanvasSize();
@@ -992,7 +994,7 @@ function setupResizeObserver() {
 
 // Add to setupExportControls or create new setup function
 function setupCoordinateSystem() {
-    const canvas = document.querySelector('canvas');
+    const canvas = document.getElementById('defaultCanvas0');
     const coordDisplay = document.createElement('div');
     coordDisplay.id = 'coordDisplay';
     coordDisplay.style.position = 'fixed';

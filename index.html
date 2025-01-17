@@ -8,6 +8,9 @@
     <script src="https://cdn.jsdelivr.net/npm/p5@1.9.2/lib/p5.min.js"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.7/require.min.js" integrity="sha512-J5ha2LF4Le+PBQnI5+xAVJDR+sZG9uSgroy4n/A6TLjNkvYQbqZA8WHZdaOvJ0HiKkBC9Frmvs10rFDSHKmveQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>    <script>
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs' } });
+    </script>
     <script>
         const params = new URLSearchParams(window.location.search);
         const useLocal = params.get('dev') === 'true';
@@ -23,6 +26,7 @@
             // { name: 'colors.js', type: 'script'},
             { name: 'strangeFunctions.js', type: 'script' },
             { name: 'executionLogic.js', type: 'script' },
+            { name: 'editor.js', type: 'script' },
             { name: 'styles.css', type: 'style' }
         ];
 
@@ -79,138 +83,151 @@
 
 <body>
     <div id="script-file-name" data-filename="testSketch.js" style="display: none;"></div>
-    <button class="collapse-button collapse-left" aria-label="Toggle left sidebar">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="15 18 9 12 15 6"></polyline>
-        </svg>
-    </button>
-    <aside class="side-panel">
-        <div class="script-selector">
-            <div class="script-label">Using script:</div>
-            <div class="script-inputs">
-                <select id="scriptSelect">
-                    <option value="" disabled>Select...</option>
-                    <!-- Options will be populated by JavaScript -->
+    <!-- <div class="code-container">
+        <div class="editor-header">
+            <div class="file-controls">
+                <button id="newFileBtn" class="editor-button">New File</button>
+                <select id="fileSelector" class="editor-select">
+                    <option value="" disabled selected>Select File</option>
                 </select>
-                <div class="show-press-enter-message">
-                    <input type="text" id="scriptNameInput" placeholder="Other script">
+            </div>
+        </div>
+        <div id="monaco-editor"></div>
+    </div> -->
+    <div class="main-container">
+        <button class="collapse-button collapse-left" aria-label="Toggle left sidebar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </button>
+        <aside class="side-panel">
+            <div class="script-selector">
+                <div class="script-label">Using script:</div>
+                <div class="script-inputs">
+                    <select id="scriptSelect">
+                        <option value="" disabled>Select...</option>
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                    <div class="show-press-enter-message">
+                        <input type="text" id="scriptNameInput" placeholder="Other script">
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="panel-content">
-            <div class="panel-title">Executed Turtle Commands</div>
-            <div class="code-display">
-                <pre><code id="code-display"></code></pre>
+            <div class="panel-content">
+                <div class="panel-title">Executed Turtle Commands</div>
+                <div class="code-display">
+                    <pre><code id="code-display"></code></pre>
+                </div>
             </div>
-        </div>
-        <div class="control-group">
-            <div class="show-press-enter-message">
-                <input type="text" id="manualCommand" placeholder="Enter a command">
+            <div class="control-group">
+                <div class="show-press-enter-message">
+                    <input type="text" id="manualCommand" placeholder="Enter a command">
+                </div>
+                <label for="speedSlider" style="display: flex; justify-content: space-between; width: 100%;">
+                    <span>Execution Delay:</span>
+                    <span id="speedValue"></span>
+                </label> </label>
+                <input type="range" id="speedSlider" min="0" max="14" step="1" value="0">
             </div>
-            <label for="speedSlider" style="display: flex; justify-content: space-between; width: 100%;">
-                <span>Execution Delay:</span>
-                <span id="speedValue"></span>
-            </label> </label>
-            <input type="range" id="speedSlider" min="0" max="14" step="1" value="0">
-        </div>
-        <div class="control-group horizontal">
-            <button id="restartExecution">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 2v6h6"></path>
-                    <path d="M3 13a9 9 0 1 0 3-7.7L3 8"></path>
-                </svg>
-                Restart
-            </button>
-            <button id="nextCommand">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="5 4 15 12 5 20 5 4"></polygon>
-                    <line x1="19" y1="5" x2="19" y2="19"></line>
-                </svg>
-                Next Command
-            </button>
-        </div>
-    </aside>
+            <div class="control-group horizontal">
+                <button id="restartExecution">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 2v6h6"></path>
+                        <path d="M3 13a9 9 0 1 0 3-7.7L3 8"></path>
+                    </svg>
+                    Restart
+                </button>
+                <button id="nextCommand">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                        <line x1="19" y1="5" x2="19" y2="19"></line>
+                    </svg>
+                    Next Command
+                </button>
+            </div>
+        </aside>
 
-    <button class="collapse-button collapse-right" aria-label="Toggle right sidebar">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
-        </svg>
-    </button>
-    <aside class="side-panel-right">
-        <div class="panel-content">
-            <div class="panel-title">Console</div>
-            <!-- Right panel content will go here -->
-        </div>
-    </aside>
+        <button class="collapse-button collapse-right" aria-label="Toggle right sidebar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+        </button>
+        <aside class="side-panel-right">
+            <div class="panel-content">
+                <div class="panel-title">Console</div>
+                <!-- Right panel content will go here -->
+            </div>
+        </aside>
 
-    <main id="canvasContainer">
-        <div class="theme-switcher">
-            <button id="themeToggle" aria-label="Toggle theme">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="5" />
-                    <path
-                        d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-                </svg>
-            </button>
-            <a href="https://p5js.org/reference/" target="_blank" aria-label="P5.js Reference">
-                <button>
+        <main id="canvasContainer">
+            <div class="theme-switcher">
+                <button id="themeToggle" aria-label="Toggle theme">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        <circle cx="12" cy="12" r="5" />
+                        <path
+                            d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
                     </svg>
                 </button>
-            </a>
-        </div>
-
-        <div class="bottom-controls">
-            <label>Canvas Size:</label>
-            <div style="display: flex; gap: 10px;">
-                <div class="show-press-enter-message">
-                <input type="number" id="canvasWidth" value="700" min="100" max="2000">
-                </div>
-                <label>x</label>
-                <div class="show-press-enter-message">
-                <input type="number" id="canvasHeight" value="700" min="100" max="2000">
-                </div>
+                <a href="https://p5js.org/reference/" target="_blank" aria-label="P5.js Reference">
+                    <button>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                    </button>
+                </a>
             </div>
-            <button id="resetSize">Reset Size</button>
-            <label>
-                <input type="checkbox" id="showTurtle" checked>
-                Show Turtle
-            </label>
-            <label>
-                <input type="checkbox" id="showGrid">
-                Show Grid
-            </label>
-        </div>
 
-        <div class="canvas-controls">
-            <button id="copyDrawing">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-                Copy Drawing
-            </button>
-            <button id="downloadDrawing">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                Download Drawing
-            </button>
-        </div>
-    </main>
+            <div class="bottom-controls">
+                <label>Canvas Size:</label>
+                <div style="display: flex; gap: 10px;">
+                    <div class="show-press-enter-message">
+                    <input type="number" id="canvasWidth" value="700" min="100" max="2000">
+                    </div>
+                    <label>x</label>
+                    <div class="show-press-enter-message">
+                    <input type="number" id="canvasHeight" value="700" min="100" max="2000">
+                    </div>
+                </div>
+                <button id="resetSize">Reset Size</button>
+                <label>
+                    <input type="checkbox" id="showTurtle" checked>
+                    Show Turtle
+                </label>
+                <label>
+                    <input type="checkbox" id="showGrid">
+                    Show Grid
+                </label>
+            </div>
+
+            <div class="canvas-controls">
+                <button id="copyDrawing">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    Copy Drawing
+                </button>
+                <button id="downloadDrawing">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download Drawing
+                </button>
+            </div>
+        </main>
+    </div>
 </body>
 
 </html>

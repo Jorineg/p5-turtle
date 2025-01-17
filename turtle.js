@@ -4,14 +4,14 @@ class Turtle {
         this.canvasHeight = h;
         this.visible = true;
         this.turtleElement = this.createTurtleElement();
-        this.canvasRect = document.querySelector('canvas').getBoundingClientRect();
+        this.canvasRect = document.querySelector('.p5Canvas').getBoundingClientRect();
         this.gridSize = 50;
         this.showingGrid = false;
         this.setInitValues();
     }
 
     updateCanvasRect() {
-        this.canvasRect = document.querySelector('canvas').getBoundingClientRect();
+        this.canvasRect = document.querySelector('.p5Canvas').getBoundingClientRect();
     }
 
     setInitValues() {

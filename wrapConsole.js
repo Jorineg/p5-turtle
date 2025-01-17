@@ -41,10 +41,18 @@ function formatConsoleMessage(type, ...args) {
         if (arg instanceof Error) {
             let position = arg.stack;
             const scriptFileName = document.getElementById('script-file-name').getAttribute('data-filename');
+            const turtleScript = document.getElementById('turtleScript');
+            if (!turtleScript) {
+                return arg.stack;
+            }
+            const numberCodeLinesInjected = parseInt(turtleScript.getAttribute('data-number-code-lines-injected'));
             const scriptContent = document.getElementById('turtleScript').textContent;
 
             // start stacktrace at first occurence of '@scriptFileName'
             const startIndex = position.indexOf(`@${scriptFileName}:`);
+            if (startIndex === -1) {
+                return arg.stack;
+            }
             position = position.slice(startIndex);
             position = position.split('\n')[0];
             let [, line, column] = position.split(':');

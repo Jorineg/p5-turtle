@@ -38,34 +38,41 @@
     background: var(--tertiary-color);
 }
 
-body {
+body{
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: var(--bg-color);
     color: var(--text-color);
+    margin: 0;
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+}
+
+.main-container {
     display: grid;
     grid-template-columns: var(--panel-width) 1fr var(--panel-width);
     transition: grid-template-columns 0.3s ease;
     grid-template-rows: min-content 1fr;
     gap: 20px;
-    height: 100vh;
+    min-height: calc(100vh - 40px); /* account for padding */
     margin: 0;
-    /* margin-top: 15px; */
     padding: 20px;
     box-sizing: border-box;
     overflow: hidden;
-    max-height: 100vh;
+    width: 100%;
+    position: relative;
 }
 
-body:has(.side-panel.collapsed) {
+.main-container:has(.side-panel.collapsed) {
     grid-template-columns: 0 1fr var(--panel-width);
     padding-left: 0;
 }
 
-body:has(.side-panel-right.collapsed) {
+.main-container:has(.side-panel-right.collapsed) {
     grid-template-columns: var(--panel-width) 1fr 0;
 }
 
-body:has(.side-panel.collapsed):has(.side-panel-right.collapsed) {
+.main-container:has(.side-panel.collapsed):has(.side-panel-right.collapsed) {
     grid-template-columns: 0 1fr 0;
 }
 
@@ -527,7 +534,7 @@ input:hover {
 
 
 .collapse-button {
-    position: fixed;
+    position: absolute;
     top: 50%;
     transform: translateY(-50%);
     width: 18px;
@@ -590,4 +597,64 @@ input:hover {
     margin-bottom: 10px;
     color: var(--text-color);
     text-align: center;
+}
+
+.code-container {
+    width: 30vw;
+    min-width: 30vw;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: var(--bg-color);
+    border-right: 1px solid var(--secondary-color);
+}
+
+.editor-header {
+    padding: 10px;
+}
+
+.file-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#monaco-editor {
+    width: 100%;
+    height: calc(100vh - 60px);
+    overflow: hidden;
+}
+
+.monaco-editor, 
+.monaco-editor .margin,
+.monaco-editor .monaco-editor-background {
+    background-color: var(--bg-color) !important;
+}
+
+.monaco-editor .line-numbers {
+    color: var(--secondary-color) !important;
+}
+
+.editor-button {
+    padding: 8px 12px;
+    background-color: var(--accent-color);
+    color: var(--text-color);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.editor-button:hover {
+    opacity: 0.9;
+}
+
+.editor-select {
+    padding: 8px 12px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--secondary-color);
+    border-radius: 5px;
+    font-size: 14px;
+    min-width: 150px;
 }
