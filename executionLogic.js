@@ -547,6 +547,11 @@ let currentScriptController = null;
 
 function loadTurtleScript() {
     const scriptFileName = document.getElementById('script-file-name').getAttribute('data-filename');
+    let fetchURL = scriptFileName;
+
+    if (scriptFileName === 'url' && scriptSelector.decompressedCode) {
+        fetchURL = `data:text/javascript;base64,${btoa(scriptSelector.decompressedCode)}`;
+    }
 
     // Clean up any existing script
     if (currentScriptController) {
@@ -562,7 +567,7 @@ function loadTurtleScript() {
     currentScriptController = new AbortController();
     const signal = currentScriptController.signal;
 
-    fetch(scriptFileName)
+    fetch(fetchURL)
         .then(response => { if (!response.ok) throw new Error(response.statusText); return response.text(); })
         .then(code => {
             try {
@@ -627,7 +632,7 @@ ${code}
             }
         })
         .catch(error => {
-            console.error('Failed to load script:', error.message);
+            console.error(`Failed to load script '${scriptFileName}':`, error.message);
         });
 }
 

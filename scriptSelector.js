@@ -4,6 +4,7 @@ class ScriptSelector {
         this.select = document.getElementById('scriptSelect');
         this.customScriptsKey = 'customScripts';
         this.lastScriptKey = 'lastSelectedScript';
+        this.decompressedCode = null;
 
         this.predefinedScripts = [
             'welcome.js',
@@ -30,8 +31,36 @@ class ScriptSelector {
     }
 
     populateSelect() {
+        // Check for URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const compressedCode = urlParams.get('code');
+
+        if (compressedCode) {
+            try {
+                // Decode base64 and decompress
+                const compressed = atob(compressedCode);
+                const charData = compressed.split('').map(x => x.charCodeAt(0));
+                const binData = new Uint8Array(charData);
+                const data = pako.inflate(binData);
+                this.decompressedCode = new TextDecoder().decode(data);
+            } catch (e) {
+                console.error('Failed to decompress code:', e);
+            }
+        }
+
         // Clear existing options (except the first placeholder)
         this.select.innerHTML = '<option value="" disabled>Select a script...</option>';
+
+        // Add URL script if present and decompressed successfully
+        if (this.decompressedCode) {
+            const urlOption = document.createElement('option');
+            urlOption.value = 'url';
+            urlOption.textContent = 'Code from URL';
+            this.select.appendChild(urlOption);
+            // Select the URL option
+            this.select.value = 'url';
+            this.updateScriptFileName('url');
+        }
 
         // Add predefined scripts group
         if (this.predefinedScripts.length > 0) {
@@ -61,6 +90,9 @@ class ScriptSelector {
     }
 
     loadLastScript() {
+        if(this.decompressedCode) {
+            return;
+        }
         const lastScript = localStorage.getItem(this.lastScriptKey) || 'testSketch.js';
         this.select.value = lastScript;
         if (!this.select.value) {
@@ -109,6 +141,39 @@ class ScriptSelector {
                 }
             }
         });
+    }
+
+    compressCurrentCodeToURL() {
+        const scriptFileName = document.getElementById('script-file-name').getAttribute('data-filename');
+        let currentCode;
+
+        if (scriptFileName === 'url' && this.decompressedCode) {
+            currentCode = this.decompressedCode;
+        } else {
+            // Create a temporary fetch to get the code content
+            fetch(scriptFileName)
+                .then(response => response.text())
+                .then(code => {
+                    // Compress the code
+                    const textEncoder = new TextEncoder();
+                    const binaryData = textEncoder.encode(code);
+                    const compressed = pako.deflate(binaryData);
+                    
+                    // Convert to base64
+                    let binary = '';
+                    compressed.forEach(byte => binary += String.fromCharCode(byte));
+                    const base64 = btoa(binary);
+                    
+                    // Create new URL with compressed code
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('code', base64);
+                    //history.pushState(null, '', url);
+
+                    //copy to clipboard
+                    navigator.clipboard.writeText(url.toString());
+                })
+                .catch(error => console.error('Error fetching script:', error));
+        }
     }
 
     updateScriptFileName(filename) {
