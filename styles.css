@@ -134,6 +134,7 @@ html {
     padding: 20px;
     min-height: min-content;
     position: relative;
+    container-type: inline-size;
 }
 
 body:has(.side-panel-right.collapsed) #canvasContainer {
@@ -153,6 +154,8 @@ body:has(.side-panel-right.collapsed) #canvasContainer {
     border-radius: 10px;
     border: 1px solid var(--text-color);
     cursor: crosshair;
+    width: auto !important;
+    height: min(100%, 100cqh) !important;
 }
 
 
@@ -588,6 +591,10 @@ input:hover {
 }
 
 .no-transition {
+    transition: none !important;
+}
+
+.no-transition * {
     transition: none !important;
 }
 

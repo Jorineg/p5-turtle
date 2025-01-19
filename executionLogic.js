@@ -669,8 +669,10 @@ function setInitP5Styles() {
 // p5.js Setup
 function setup() {
 
+    const canvas = document.querySelector('#defaultCanvas0');
+
     let [width, height] = setupSizeControls();
-    createCanvas(width, height);
+    createCanvas(width, height, canvas);
     t = new Turtle(width, height);
     canvasWidth = width;
     canvasHeight = height;
@@ -933,46 +935,49 @@ function setupSizeControls() {
 // except this would result in a width that is greater than what is available
 // in that case set canvas width to max available width and height so that aspect ratio is kept 
 function updateVisibleCanvasSize() {
-    const canvas = document.getElementById('defaultCanvas0');
-    const canvasContainer = document.getElementById('canvasContainer');
-    const bottomControls = document.querySelector('.bottom-controls');
-    
-    // Get the actual dimensions including padding and borders
-    const containerRect = canvasContainer.getBoundingClientRect();
-    const bottomControlsRect = bottomControls.getBoundingClientRect();
-    
-    // Get computed styles to account for margins
-    const containerStyle = window.getComputedStyle(canvasContainer);
-    const bottomControlsStyle = window.getComputedStyle(bottomControls);
-    const canvasStyle = window.getComputedStyle(canvas);
-    
-    // Calculate available space accounting for padding and margins
-    const availableWidth = containerRect.width - 
-        parseFloat(containerStyle.paddingLeft) - 
-        parseFloat(containerStyle.paddingRight);
-    
-    const availableHeight = containerRect.height - 
-        bottomControlsRect.height -
-        parseFloat(containerStyle.paddingTop) - 
-        parseFloat(containerStyle.paddingBottom) -
-        parseFloat(bottomControlsStyle.marginTop) -
-        parseFloat(bottomControlsStyle.marginBottom) -
-        parseFloat(canvasStyle.marginTop) -
-        parseFloat(canvasStyle.marginBottom)-
-        4; // 2px for border, 2px for idk...
+    // solved with clever css???
 
-    const canvasWidth = canvas.width;
-    const canvasHeight = canvas.height;
-    const aspectRatio = canvasWidth / canvasHeight;
-    let newWidth = availableWidth;
-    let newHeight = newWidth / aspectRatio;
-    if (newHeight > availableHeight) {
-        newHeight = availableHeight;
-        newWidth = newHeight * aspectRatio;
-    }
-    canvas.style.width = `${newWidth}px`;
-    canvas.style.height = `${newHeight}px`;
+    // const canvas = document.getElementById('defaultCanvas0');
+    // const canvasContainer = document.getElementById('canvasContainer');
+    // const bottomControls = document.querySelector('.bottom-controls');
+    
+    // // Get the actual dimensions including padding and borders
+    // const containerRect = canvasContainer.getBoundingClientRect();
+    // const bottomControlsRect = bottomControls.getBoundingClientRect();
+    
+    // // Get computed styles to account for margins
+    // const containerStyle = window.getComputedStyle(canvasContainer);
+    // const bottomControlsStyle = window.getComputedStyle(bottomControls);
+    // const canvasStyle = window.getComputedStyle(canvas);
+    
+    // // Calculate available space accounting for padding and margins
+    // const availableWidth = containerRect.width - 
+    //     parseFloat(containerStyle.paddingLeft) - 
+    //     parseFloat(containerStyle.paddingRight);
+    
+    // const availableHeight = containerRect.height - 
+    //     bottomControlsRect.height -
+    //     parseFloat(containerStyle.paddingTop) - 
+    //     parseFloat(containerStyle.paddingBottom) -
+    //     parseFloat(bottomControlsStyle.marginTop) -
+    //     parseFloat(bottomControlsStyle.marginBottom) -
+    //     parseFloat(canvasStyle.marginTop) -
+    //     parseFloat(canvasStyle.marginBottom)-
+    //     4; // 2px for border, 2px for idk...
+
+    // const canvasWidth = canvas.width;
+    // const canvasHeight = canvas.height;
+    // const aspectRatio = canvasWidth / canvasHeight;
+    // let newWidth = availableWidth;
+    // let newHeight = newWidth / aspectRatio;
+    // if (newHeight > availableHeight) {
+    //     newHeight = availableHeight;
+    //     newWidth = newHeight * aspectRatio;
+    // }
+    // canvas.style.width = `${newWidth}px`;
+    // canvas.style.height = `${newHeight}px`;
 }
+
 
 
 function setupResizeObserver() {
